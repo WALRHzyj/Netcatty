@@ -127,7 +127,6 @@ export class CommandReviewSession {
    * history so the model already knows the principles.
    */
   async review(command: string, signal?: AbortSignal): Promise<ReviewResult> {
-    console.log('[CommandReview] Reviewing:', command.slice(0, 80));
     const userMessage = `审查命令：\n\`\`\`\n${command}\n\`\`\``;
 
     const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
@@ -154,10 +153,7 @@ export class CommandReviewSession {
       /* eslint-enable @typescript-eslint/no-explicit-any */
 
       const text = result.text?.trim() ?? '';
-      console.log('[CommandReview] Raw response:', text.slice(0, 200));
       const parsed = this.parseResult(text);
-
-      console.log('[CommandReview] Result:', parsed.risk, '|', parsed.reason);
 
       // Record the turn so the model retains context across calls.
       this.transcript.push({ role: 'user', content: userMessage });
@@ -166,7 +162,6 @@ export class CommandReviewSession {
 
       return parsed;
     } catch (err: unknown) {
-      console.error('[CommandReview] Review call FAILED:', err);
       const reason =
         err instanceof Error
           ? err.name === 'AbortError'
@@ -224,7 +219,6 @@ export class CommandReviewSession {
     const lower = cleaned.toLowerCase();
     if (lower.includes('dangerous') || cleaned.includes('危险')) return { risk: 'dangerous', reason: '审查判断为危险操作' };
     if (lower.includes('safe') || cleaned.includes('安全')) return { risk: 'safe', reason: '审查判断为安全操作' };
-    console.warn('[CommandReview] Could not parse risk from:', text.slice(0, 200));
     return { risk: 'caution', reason: '审查 AI 返回格式异常，需人工确认' };
   }
 
