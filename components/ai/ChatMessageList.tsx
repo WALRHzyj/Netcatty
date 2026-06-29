@@ -345,6 +345,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                   />
                 );
               }
+              const reviewResult = getReviewResult(item.toolCallId);
               return (
                 <React.Profiler key={item.toolCallId} {...getAIPanelProfilerProps("AIChatPanel.ToolCall.Result")}>
                   <div>
@@ -353,6 +354,8 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       args={item.args}
                       result={item.content}
                       isError={item.isError}
+                      reviewNote={reviewResult?.reason}
+                      reviewRisk={reviewResult?.risk}
                     />
                   </div>
                 </React.Profiler>
