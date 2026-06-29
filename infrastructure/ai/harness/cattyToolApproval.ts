@@ -83,6 +83,11 @@ export function buildCattyToolApproval(input: {
       if (command && commandBlocklist?.length) {
         const safety = checkCommandSafety(command, commandBlocklist);
         if (safety.blocked) {
+          recordReviewResult(toolCall.toolCallId, {
+            risk: 'dangerous',
+            reason: `匹配规则: ${safety.matchedPattern}`,
+            source: 'blacklist',
+          });
           return {
             type: 'denied' as const,
             reason: `命令被黑名单拦截。匹配规则: ${safety.matchedPattern}`,
@@ -101,6 +106,11 @@ export function buildCattyToolApproval(input: {
             args: { command },
           });
           if (match) {
+            recordReviewResult(toolCall.toolCallId, {
+              risk: 'safe',
+              reason: match.note || '用户已授权此命令模式',
+              source: 'whitelist',
+            });
             return undefined; // Whitelisted — auto-approve
           }
         }
@@ -109,12 +119,11 @@ export function buildCattyToolApproval(input: {
       // Layer 3: AI review — classify risk and decide
       if (command && reviewSession) {
         const result = await reviewSession.review(command);
+        // Tag the result so the UI badge shows the correct source label.
+        result.source = 'ai-review';
 
         switch (result.risk) {
           case 'safe':
-            // Auto-approve without interrupting the user, but record the
-            // review result so the stream processor can show a visible
-            // "AI 审查通过" indicator in the chat.
             recordReviewResult(toolCall.toolCallId, result);
             return undefined;
 

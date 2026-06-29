@@ -356,6 +356,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       isError={item.isError}
                       reviewNote={reviewResult?.reason}
                       reviewRisk={reviewResult?.risk}
+                      reviewSource={reviewResult?.source}
                     />
                   </div>
                 </React.Profiler>
@@ -476,6 +477,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                               approvalStatus={approvalStatus}
                               reviewNote={pendingReq?.reviewNote ?? review?.reason}
                               reviewRisk={review?.risk}
+                              reviewSource={review?.source}
                               onApproveOnce={() => handleApproveOnce(tc.id)}
                               onAlwaysAllow={() => handleAlwaysAllow(tc.id, pendingReq ?? {
                                 toolCallId: tc.id,
@@ -553,6 +555,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       approvalStatus={approvalStatus}
                       reviewNote={pendingReq2?.reviewNote ?? review2?.reason}
                       reviewRisk={review2?.risk}
+                      reviewSource={review2?.source}
                       onApproveOnce={() => handleApproveOnce(tc.id)}
                       onAlwaysAllow={() => handleAlwaysAllow(tc.id, pendingReq2 ?? {
                         toolCallId: tc.id,
@@ -584,6 +587,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                     approvalStatus={'pending'}
                     reviewNote={req.reviewNote}
                     reviewRisk={getReviewResult(id)?.risk}
+                    reviewSource={getReviewResult(id)?.source}
                     onApproveOnce={() => handleApproveOnce(id)}
                     onAlwaysAllow={() => handleAlwaysAllow(id, req)}
                     onReject={() => handleReject(id)}

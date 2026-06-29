@@ -12,6 +12,8 @@ export type ReviewRisk = 'safe' | 'caution' | 'dangerous';
 export interface ReviewResult {
   risk: ReviewRisk;
   reason: string;
+  /** Which defence layer produced this result (for UI badge label). */
+  source?: 'blacklist' | 'whitelist' | 'ai-review';
 }
 
 // ---------------------------------------------------------------------------

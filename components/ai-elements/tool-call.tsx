@@ -127,6 +127,39 @@ function formatToolResult(result: unknown): string {
   return JSON.stringify(parsed, null, 2);
 }
 
+// ---------------------------------------------------------------------------
+// Defence layer badge helpers
+// ---------------------------------------------------------------------------
+
+/** Returns the badge label for the defence layer that handled this command. */
+function defenceBadgeLabel(
+  risk: 'safe' | 'caution' | 'dangerous',
+  source?: 'blacklist' | 'whitelist' | 'ai-review',
+): string {
+  if (source === 'blacklist') return '黑名单拦截';
+  if (source === 'whitelist') return '白名单放行';
+  // AI review
+  if (risk === 'safe') return 'AI 审查通过';
+  if (risk === 'caution') return 'AI 审查·需确认';
+  return 'AI 审查·已拒绝';
+}
+
+/** Returns the title for the expanded review reason block. */
+function defenceTitle(
+  risk: 'safe' | 'caution' | 'dangerous',
+  source?: 'blacklist' | 'whitelist' | 'ai-review',
+): string {
+  if (source === 'blacklist') return '黑名单拦截';
+  if (source === 'whitelist') return '白名单放行';
+  if (risk === 'safe') return 'AI 审查通过';
+  if (risk === 'caution') return 'AI 审查·需确认';
+  return 'AI 审查·已拒绝';
+}
+
+// ---------------------------------------------------------------------------
+// ToolCall component
+// ---------------------------------------------------------------------------
+
 export interface ToolCallProps extends HTMLAttributes<HTMLDivElement> {
   name: string;
   className?: string;
@@ -145,16 +178,18 @@ export interface ToolCallProps extends HTMLAttributes<HTMLDivElement> {
   onApproveOnce?: () => void;
   /** Called when user approves and persists an always-allow grant rule. */
   onAlwaysAllow?: () => void;
-  /** AI review note shown prominently in the approval dialog (review mode). */
+  /** Review note / reason — shown in the expanded block and badge tooltip. */
   reviewNote?: string;
-  /** Risk level from AI review — drives badge color. */
+  /** Risk level — drives badge color (green / yellow / red). */
   reviewRisk?: 'safe' | 'caution' | 'dangerous';
+  /** Which defence layer produced this result — drives badge label. */
+  reviewSource?: 'blacklist' | 'whitelist' | 'ai-review';
 }
 
 export const ToolCall = ({
   name, args, result, isError, isLoading, isInterrupted,
   approvalStatus, onApprove, onReject, onApproveOnce, onAlwaysAllow,
-  reviewNote, reviewRisk, className, ...props
+  reviewNote, reviewRisk, reviewSource, className, ...props
 }: ToolCallProps) => {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
@@ -193,13 +228,12 @@ export const ToolCall = ({
   useEffect(() => {
     if (isPendingApproval && cardRef.current) {
       cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      // Small delay to let the UI render, then expand and focus
       setExpanded(true);
       setTimeout(() => approveBtnRef.current?.focus(), 100);
     }
   }, [isPendingApproval]);
 
-  // Reset responded state when approvalStatus changes (e.g. new approval)
+  // Reset responded state when approvalStatus changes
   useEffect(() => {
     if (approvalStatus === 'pending') setResponded(false);
   }, [approvalStatus]);
@@ -259,21 +293,16 @@ export const ToolCall = ({
           }
           return <span className="font-mono text-muted-foreground/70 truncate min-w-0">{name}</span>;
         })()}
-        {/* Badge group — always stays on one line, shrinks only as last resort */}
+        {/* Badge group — always stays on one line */}
         <span className="flex shrink-0 items-center gap-1 ml-auto">
-          {reviewNote && reviewRisk === 'safe' && (
-            <Badge className="text-[10px] px-1.5 py-0 bg-green-600/15 text-green-400 border-green-600/25">
-              AI 审查通过
-            </Badge>
-          )}
-          {reviewNote && reviewRisk === 'caution' && (
-            <Badge className="text-[10px] px-1.5 py-0 bg-yellow-600/15 text-yellow-400 border-yellow-600/25">
-              AI 审查·需确认
-            </Badge>
-          )}
-          {reviewNote && reviewRisk === 'dangerous' && (
-            <Badge className="text-[10px] px-1.5 py-0 bg-red-600/15 text-red-400 border-red-600/25">
-              AI 审查·已拒绝
+          {reviewNote && reviewRisk && (
+            <Badge className={cn(
+              'text-[10px] px-1.5 py-0',
+              reviewRisk === 'safe' && 'bg-green-600/15 text-green-400 border-green-600/25',
+              reviewRisk === 'caution' && 'bg-yellow-600/15 text-yellow-400 border-yellow-600/25',
+              reviewRisk === 'dangerous' && 'bg-red-600/15 text-red-400 border-red-600/25',
+            )}>
+              {defenceBadgeLabel(reviewRisk, reviewSource)}
             </Badge>
           )}
           {approvalStatus === 'approved' && (
@@ -292,8 +321,8 @@ export const ToolCall = ({
 
       {expanded && (
         <div className="border-t border-border/20">
-          {/* AI review reason — colored block */}
-          {reviewNote && (
+          {/* Defence layer review reason — colored block */}
+          {reviewNote && reviewRisk && (
             <div className={cn(
               'px-3 py-2 border-b border-border/10',
               reviewRisk === 'safe' && 'bg-green-500/[0.04]',
@@ -316,7 +345,7 @@ export const ToolCall = ({
                   reviewRisk === 'dangerous' && 'text-red-400/80',
                 )}>
                   <span className="font-medium">
-                    {reviewRisk === 'safe' ? 'AI 审查通过' : reviewRisk === 'caution' ? 'AI 审查·需确认' : 'AI 审查·已拒绝'}
+                    {defenceTitle(reviewRisk, reviewSource)}
                   </span>
                   <span className="opacity-70"> · {reviewNote}</span>
                 </p>
