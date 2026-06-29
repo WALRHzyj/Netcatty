@@ -141,6 +141,8 @@ export interface ChatMessage {
     toolName: string;
     toolArgs: Record<string, unknown>;
     status: 'pending' | 'approved' | 'denied';
+    /** AI review note shown in the approval dialog (review mode only). */
+    reviewNote?: string;
   };
 }
 

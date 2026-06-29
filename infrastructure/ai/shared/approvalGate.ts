@@ -37,6 +37,8 @@ export interface ApprovalRequest {
   /** Optional chat session scope — used to clear only relevant approvals on stop */
   chatSessionId?: string;
   capabilityId?: string;
+  /** AI review note shown in the approval dialog (review mode only). */
+  reviewNote?: string;
 }
 
 export interface ResolveApprovalOptions {
@@ -161,6 +163,7 @@ export function requestApproval(
   chatSessionId?: string,
   timeoutMs: number = CATTY_APPROVAL_TIMEOUT_MS,
   capabilityId?: string,
+  reviewNote?: string,
 ): Promise<boolean> {
   const request: ApprovalRequest = {
     toolCallId,
@@ -168,6 +171,7 @@ export function requestApproval(
     args,
     chatSessionId,
     capabilityId: capabilityId ?? resolveCapabilityId(toolName),
+    reviewNote,
   };
 
   if (isGrantedByRules(request)) {

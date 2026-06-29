@@ -73,6 +73,7 @@ export function buildCattyToolApproval(input: {
     }
 
     const args = (toolCall.input ?? {}) as Record<string, unknown>;
+    let reviewNote: string | undefined;
 
     // ── review mode — three-layer defence ─────────────────────────────
     if (permissionMode === 'review') {
@@ -131,9 +132,10 @@ export function buildCattyToolApproval(input: {
             };
 
           case 'caution':
-            // Fall through to the standard approval UI — the user decides.
-            // The approval gate internally checks permission grants again
-            // (defence-in-depth) and shows the approve/deny dialog.
+            // Record review result so it shows in the tool output if user approves.
+            recordReviewResult(toolCall.toolCallId, result);
+            // Fall through to the approval dialog with the review note.
+            reviewNote = result.reason;
             break;
         }
       }
@@ -156,6 +158,7 @@ export function buildCattyToolApproval(input: {
       chatSessionId,
       undefined,
       spec.capabilityId ?? resolveCapabilityId(toolCall.toolName),
+      reviewNote,
     );
 
     if (approved) {

@@ -145,12 +145,14 @@ export interface ToolCallProps extends HTMLAttributes<HTMLDivElement> {
   onApproveOnce?: () => void;
   /** Called when user approves and persists an always-allow grant rule. */
   onAlwaysAllow?: () => void;
+  /** AI review note shown prominently in the approval dialog (review mode). */
+  reviewNote?: string;
 }
 
 export const ToolCall = ({
   name, args, result, isError, isLoading, isInterrupted,
   approvalStatus, onApprove, onReject, onApproveOnce, onAlwaysAllow,
-  className, ...props
+  reviewNote, className, ...props
 }: ToolCallProps) => {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
@@ -284,9 +286,20 @@ export const ToolCall = ({
           {/* Inline approval buttons */}
           {isPendingApproval && (
             <div className="min-w-0 px-3 py-2 border-t border-border/20">
-              <p className="mb-2 text-[10px] leading-snug text-muted-foreground/40">
-                {t('ai.chat.toolApprovalHint')}
-              </p>
+              {/* AI review note — prominent banner */}
+              {reviewNote && (
+                <div className="flex items-start gap-1.5 mb-2 px-2 py-1.5 rounded bg-purple-500/8 border border-purple-500/15">
+                  <span className="text-[10px] shrink-0 mt-px">🔍</span>
+                  <p className="text-[10px] leading-snug text-purple-300/80">
+                    <span className="font-medium">AI 审查：</span>{reviewNote}
+                  </p>
+                </div>
+              )}
+              {!reviewNote && (
+                <p className="mb-2 text-[10px] leading-snug text-muted-foreground/40">
+                  {t('ai.chat.toolApprovalHint')}
+                </p>
+              )}
               <div className="flex w-full min-w-0 items-stretch gap-1.5">
                 <Button
                   variant="outline"
