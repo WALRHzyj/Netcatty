@@ -127,8 +127,7 @@ export class CommandReviewSession {
     console.log('[CommandReview] Reviewing:', command.slice(0, 80));
     const userMessage = `审查命令：\n\`\`\`\n${command}\n\`\`\``;
 
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-      { role: 'system', content: REVIEW_SYSTEM_PROMPT },
+    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
       ...this.transcript,
       { role: 'user', content: userMessage },
     ];
@@ -143,6 +142,7 @@ export class CommandReviewSession {
       /* eslint-disable @typescript-eslint/no-explicit-any */
       const result = await generateText({
         model: this.model as any,
+        system: REVIEW_SYSTEM_PROMPT,
         messages: messages as any,
         temperature: 0,
         maxOutputTokens: REVIEW_MAX_TOKENS,
