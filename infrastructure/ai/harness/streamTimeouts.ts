@@ -18,7 +18,7 @@ export interface BuildCattyStreamTimeoutsInput {
 export function buildCattyStreamTimeouts(
   input: BuildCattyStreamTimeoutsInput = {},
 ) {
-  const approvalBudgetMs = input.permissionMode === 'confirm' ? CATTY_APPROVAL_TIMEOUT_MS : 0;
+  const approvalBudgetMs = (input.permissionMode === 'confirm' || input.permissionMode === 'review') ? CATTY_APPROVAL_TIMEOUT_MS : 0;
   const stepCount =
     Number.isFinite(input.maxIterations) && input.maxIterations != null && input.maxIterations > 0
       ? Math.max(1, Math.floor(input.maxIterations))

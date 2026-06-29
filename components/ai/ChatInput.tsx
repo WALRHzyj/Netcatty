@@ -6,7 +6,7 @@
  * and a bottom toolbar with muted controls + subtle send button.
  */
 
-import { AtSign, Check, ChevronDown, ChevronRight, Cpu, Expand, Eye, FileText, ImageIcon, MessageSquare, Package, Plus, ShieldCheck, SquareTerminal, X, Zap } from 'lucide-react';
+import { AtSign, Check, ChevronDown, ChevronRight, Cpu, Expand, Eye, FileText, ImageIcon, MessageSquare, Package, Plus, ScanSearch, ShieldCheck, SquareTerminal, X, Zap } from 'lucide-react';
 import { filterQuickMessages, buildSlashCommandItems, filterUserSkillsForSlash, getSlashCommandItemKey, isSystemStopSlashCommand, type AIQuickMessage, type SlashCommandItem, type UserSkillSlashOption } from '../../infrastructure/ai/quickMessages';
 import { SlashCommandPicker } from './SlashCommandPicker';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -1009,10 +1009,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     >
                       {permissionMode === 'observer' && <Eye size={11} className="text-blue-400/70" />}
                       {permissionMode === 'confirm' && <ShieldCheck size={11} className="text-yellow-400/70" />}
+                      {permissionMode === 'review' && <ScanSearch size={11} className="text-purple-400/70" />}
                       {permissionMode === 'auto' && <Zap size={11} className="text-green-400/70" />}
                       <span className="truncate max-w-[72px]">
                         {permissionMode === 'observer' && t('ai.chat.permObserver')}
                         {permissionMode === 'confirm' && t('ai.chat.permConfirm')}
+                        {permissionMode === 'review' && t('ai.chat.permReview')}
                         {permissionMode === 'auto' && t('ai.chat.permAuto')}
                       </span>
                       <ChevronDown size={9} className="text-muted-foreground/50" />
@@ -1032,6 +1034,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     >
                       {([
                         { mode: 'auto' as const, icon: Zap, color: 'text-green-400/70', label: t('ai.chat.permAuto'), desc: t('ai.chat.permAutoDesc') },
+                        { mode: 'review' as const, icon: ScanSearch, color: 'text-purple-400/70', label: t('ai.chat.permReview'), desc: t('ai.chat.permReviewDesc') },
                         { mode: 'confirm' as const, icon: ShieldCheck, color: 'text-yellow-400/70', label: t('ai.chat.permConfirm'), desc: t('ai.chat.permConfirmDesc') },
                         { mode: 'observer' as const, icon: Eye, color: 'text-blue-400/70', label: t('ai.chat.permObserver'), desc: t('ai.chat.permObserverDesc') },
                       ]).map(({ mode, icon: Icon, color, label, desc }) => (

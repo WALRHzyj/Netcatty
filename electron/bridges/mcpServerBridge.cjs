@@ -56,7 +56,7 @@ let commandTimeoutMs = 60000;
 // Max iterations for AI agent loops (default 20, synced from user settings)
 let maxIterations = 20;
 
-// Permission mode: 'observer' | 'confirm' | 'auto' (synced from user settings)
+// Permission mode: 'observer' | 'confirm' | 'auto' | 'review' (synced from user settings)
 let permissionMode = "confirm";
 
 // Cached permission grants synced from renderer (confirm-mode memory table)
@@ -353,7 +353,7 @@ function getMaxIterations() {
 }
 
 function setPermissionMode(mode) {
-  if (mode === "observer" || mode === "confirm" || mode === "auto") {
+  if (mode === "observer" || mode === "confirm" || mode === "auto" || mode === "review") {
     permissionMode = mode;
     writeCliDiscoveryFile();
   }

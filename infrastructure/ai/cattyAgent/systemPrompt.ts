@@ -21,7 +21,7 @@ export interface SystemPromptContext {
       status?: string;
     }>;
   }>;
-  permissionMode: 'observer' | 'confirm' | 'auto';
+  permissionMode: 'observer' | 'confirm' | 'auto' | 'review';
   webSearchEnabled?: boolean;
   userSkillsContext?: string;
 }
@@ -157,7 +157,7 @@ function buildHostList(
 }
 
 function buildPermissionRules(
-  permissionMode: 'observer' | 'confirm' | 'auto',
+  permissionMode: 'observer' | 'confirm' | 'auto' | 'review',
 ): string {
   switch (permissionMode) {
     case 'observer':
@@ -186,6 +186,20 @@ function buildPermissionRules(
         '- Always present a plan for multi-step tasks before starting.',
         '- Blocked commands are still denied regardless of mode.',
         '- Exercise caution with destructive or irreversible operations.',
+      ].join('\n');
+
+    case 'review':
+      return [
+        'You are in **review** mode. You may generate commands freely, just like auto mode. Every command you generate will be automatically reviewed by a security audit system before execution:',
+        '',
+        '- **Safe commands** (read-only queries, status checks, diagnostics) will execute immediately without interruption.',
+        '- **Risky commands** (file modifications, service restarts, package installs) will be shown to the user for manual approval.',
+        '- **Dangerous commands** (destructive operations, system-level changes, obfuscated commands) will be blocked automatically.',
+        '',
+        'You do NOT need to ask the user for permission in your text — just call the tools. The review system handles the approval workflow.',
+        '- Always present a plan for multi-step tasks before starting.',
+        '- Blocklisted commands are still denied regardless of mode.',
+        '- Prefer safe, incremental approaches over risky operations when possible.',
       ].join('\n');
   }
 }

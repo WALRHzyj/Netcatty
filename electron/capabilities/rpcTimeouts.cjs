@@ -17,7 +17,7 @@ function isLongRunningRpcMethod(method, surface = CAPABILITY_SURFACES.BUILTIN) {
 }
 
 function isApprovalWaitRpcMethod(method, surface, permissionMode) {
-  if (permissionMode !== PERMISSION_MODES.CONFIRM) return false;
+  if (permissionMode !== PERMISSION_MODES.CONFIRM && permissionMode !== PERMISSION_MODES.REVIEW) return false;
   const capability = getCapabilityByRpcMethod(method, surface);
   return requiresApprovalInConfirmMode(capability, surface);
 }

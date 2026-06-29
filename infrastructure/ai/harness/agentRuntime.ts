@@ -4,6 +4,7 @@ import type { AgentBackend, AgentEvent, AgentEventListener } from './types';
 import { ToolOutputStore } from './toolOutputStore';
 import { ToolResultDedup } from './toolResultDedup';
 import { SessionStateStore } from './sessionState';
+import { disposeReviewSession } from './turnDrivers/cattyStreamProcessor';
 import type { TurnDriver, TurnInput, TurnResult } from './turnDrivers/types';
 
 let turnCounter = 0;
@@ -59,6 +60,7 @@ export class AgentRuntime {
     this.toolOutputStores.get(chatSessionId)?.prune(chatSessionId);
     this.toolOutputStores.delete(chatSessionId);
     this.sessionStateStore.clear(chatSessionId);
+    disposeReviewSession(chatSessionId);
   }
 
   async waitForActiveTurn(chatSessionId: string): Promise<void> {

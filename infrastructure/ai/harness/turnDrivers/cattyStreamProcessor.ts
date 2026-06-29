@@ -14,6 +14,22 @@ import type { CattyToolsBundle } from '../capabilityTools';
 import { buildCattyToolApproval } from '../cattyToolApproval';
 import type { CattyRuntimeContext } from '../cattyRuntimeContext';
 import { buildCattyStreamTimeouts } from '../streamTimeouts';
+import { CommandReviewSession } from '../../review/commandReviewer';
+
+// ---------------------------------------------------------------------------
+// Per-chat-session review session cache.
+//
+// Review sessions persist across turns within the same chat so the review AI
+// builds up context and doesn't re-process the classification framework each
+// turn. A new chat (new chatSessionId) automatically gets a fresh session.
+// ---------------------------------------------------------------------------
+const reviewSessionCache = new Map<string, CommandReviewSession>();
+
+/** Dispose the review session for a chat session (call on chat close / new chat). */
+export function disposeReviewSession(chatSessionId: string): void {
+  reviewSessionCache.delete(chatSessionId);
+}
+
 import {
   extractProviderContinuationFromRawChunk,
   mergeProviderContinuation,
@@ -60,6 +76,7 @@ export interface ProcessCattyStreamInput {
   continuationContext?: CattyProviderContinuationContext;
   turnId?: string;
   commandTimeoutMs?: number;
+  commandBlocklist?: string[];
   runtimeContext: CattyRuntimeContext;
   onAgentEvent?: (event: AgentEvent) => void;
   prepareStep?: (args: {
@@ -103,6 +120,7 @@ export async function processCattyStream(input: ProcessCattyStreamInput): Promis
     continuationContext,
     turnId,
     commandTimeoutMs,
+    commandBlocklist,
     runtimeContext: initialRuntimeContext,
     onAgentEvent,
     prepareStep,
@@ -111,6 +129,20 @@ export async function processCattyStream(input: ProcessCattyStreamInput): Promis
 
   let runtimeContext = initialRuntimeContext;
   const { tools, toolsContext } = toolsBundle;
+
+  // Get-or-create a review session for this chat.  The session lives across
+  // turns so the review AI retains context; a new chat (different chatSessionId)
+  // automatically starts with a fresh transcript.
+  const reviewSession: CommandReviewSession | undefined =
+    runtimeContext.permissionMode === 'review'
+      ? (() => {
+          const existing = reviewSessionCache.get(runtimeContext.chatSessionId);
+          if (existing) return existing;
+          const session = new CommandReviewSession(model as any);
+          reviewSessionCache.set(runtimeContext.chatSessionId, session);
+          return session;
+        })()
+      : undefined;
 
   const result = streamText({
     model,
@@ -122,6 +154,8 @@ export async function processCattyStream(input: ProcessCattyStreamInput): Promis
     toolApproval: buildCattyToolApproval({
       permissionMode: runtimeContext.permissionMode,
       chatSessionId: runtimeContext.chatSessionId,
+      commandBlocklist,
+      reviewSession,
     }),
     stopWhen: isStepCount(maxIterations),
     abortSignal: signal,

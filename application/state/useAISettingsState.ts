@@ -38,7 +38,7 @@ import { useStoredBoolean } from './useStoredBoolean';
 
 function readPermissionMode(): AIPermissionMode {
   const stored = localStorageAdapter.readString(STORAGE_KEY_AI_PERMISSION_MODE);
-  if (stored === 'observer' || stored === 'confirm' || stored === 'auto') return stored;
+  if (stored === 'observer' || stored === 'confirm' || stored === 'auto' || stored === 'review') return stored;
   return 'confirm';
 }
 

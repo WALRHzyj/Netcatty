@@ -14,7 +14,7 @@ export const cattyRuntimeContextSchema = z.object({
   providerId: z.string().optional(),
   modelId: z.string().optional(),
   userGoal: z.string().optional(),
-  permissionMode: z.enum(['observer', 'confirm', 'auto']),
+  permissionMode: z.enum(['observer', 'confirm', 'auto', 'review']),
   scopeType: z.enum(['terminal', 'workspace']),
   scopeLabel: z.string().optional(),
   lastCompaction: z.custom<CompactionTrace>().optional(),
@@ -26,7 +26,7 @@ export type CattyRuntimeContext = z.infer<typeof cattyRuntimeContextSchema>;
 export const cattyToolContextSchema = z.object({
   bridge: z.custom<NetcattyBridge>(),
   chatSessionId: z.string().optional(),
-  permissionMode: z.enum(['observer', 'confirm', 'auto']),
+  permissionMode: z.enum(['observer', 'confirm', 'auto', 'review']),
   commandBlocklist: z.array(z.string()).optional(),
   webSearchConfig: z.custom<WebSearchConfig>().optional(),
   getExecutorContext: z.custom<() => ExecutorContext>(),

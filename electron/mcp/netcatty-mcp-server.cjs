@@ -56,7 +56,7 @@ const SCOPED_SESSION_IDS = process.env.NETCATTY_MCP_SESSION_IDS != null
 // Chat session ID for per-scope metadata isolation
 const CHAT_SESSION_ID = process.env.NETCATTY_MCP_CHAT_SESSION_ID || null;
 
-// Permission mode: 'observer' | 'confirm' | 'auto' (defense-in-depth, TCP bridge also checks)
+// Permission mode: 'observer' | 'confirm' | 'auto' | 'review' (defense-in-depth, TCP bridge also checks)
 const PERMISSION_MODE = process.env.NETCATTY_MCP_PERMISSION_MODE || "confirm";
 
 // Default command blocklist (defense-in-depth, TCP bridge also checks)

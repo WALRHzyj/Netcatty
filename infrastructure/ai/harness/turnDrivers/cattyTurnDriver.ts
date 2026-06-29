@@ -258,6 +258,7 @@ async function runCattyTurn(input: CattyTurnInput, ctx: TurnDriverContext): Prom
         continuationContext,
         turnId: ctx.turnId,
         commandTimeoutMs,
+        commandBlocklist: context.commandBlocklist,
         runtimeContext,
         onAgentEvent: (event) => ctx.emit(event),
         prepareStep: async ({ stepNumber, messages, runtimeContext: stepRuntimeContext }) => {
