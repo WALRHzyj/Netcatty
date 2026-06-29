@@ -237,7 +237,7 @@ export const ToolCall = ({
       <button
         type="button"
         onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-muted/20 transition-colors cursor-pointer"
+        className="w-full flex items-center gap-1.5 px-3 py-1.5 hover:bg-muted/20 transition-colors cursor-pointer min-w-0"
       >
         {expanded
           ? <ChevronDown size={12} className="text-muted-foreground/40 shrink-0" />
@@ -249,7 +249,7 @@ export const ToolCall = ({
             return (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-mono text-muted-foreground/70 truncate cursor-default">
+                  <span className="font-mono text-muted-foreground/70 truncate cursor-default min-w-0">
                     <span className="text-muted-foreground/40">$ </span>{displayCmd}
                   </span>
                 </TooltipTrigger>
@@ -257,37 +257,37 @@ export const ToolCall = ({
               </Tooltip>
             );
           }
-          return <span className="font-mono text-muted-foreground/70 truncate">{name}</span>;
+          return <span className="font-mono text-muted-foreground/70 truncate min-w-0">{name}</span>;
         })()}
-        <span className="flex-1" />
-        {/* AI review badge — visible even when collapsed */}
-        {reviewNote && reviewRisk === 'safe' && (
-          <Badge className="text-[10px] px-1.5 py-0 bg-green-600/15 text-green-400 border-green-600/25">
-            AI 审查通过
-          </Badge>
-        )}
-        {reviewNote && reviewRisk === 'caution' && (
-          <Badge className="text-[10px] px-1.5 py-0 bg-yellow-600/15 text-yellow-400 border-yellow-600/25">
-            AI 审查·需确认
-          </Badge>
-        )}
-        {reviewNote && reviewRisk === 'dangerous' && (
-          <Badge className="text-[10px] px-1.5 py-0 bg-red-600/15 text-red-400 border-red-600/25">
-            AI 审查·已拒绝
-          </Badge>
-        )}
-        {/* Approval badge for resolved approvals */}
-        {approvalStatus === 'approved' && (
-          <Badge className="text-[10px] px-1.5 py-0 bg-green-600/20 text-green-400 border-green-600/30">
-            {t('ai.chat.toolApproved')}
-          </Badge>
-        )}
-        {approvalStatus === 'denied' && (
-          <Badge className="text-[10px] px-1.5 py-0 bg-red-600/20 text-red-400 border-red-600/30">
-            {t('ai.chat.toolDenied')}
-          </Badge>
-        )}
-        {statusIcon}
+        {/* Badge group — always stays on one line, shrinks only as last resort */}
+        <span className="flex shrink-0 items-center gap-1 ml-auto">
+          {reviewNote && reviewRisk === 'safe' && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-green-600/15 text-green-400 border-green-600/25">
+              AI 审查通过
+            </Badge>
+          )}
+          {reviewNote && reviewRisk === 'caution' && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-yellow-600/15 text-yellow-400 border-yellow-600/25">
+              AI 审查·需确认
+            </Badge>
+          )}
+          {reviewNote && reviewRisk === 'dangerous' && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-red-600/15 text-red-400 border-red-600/25">
+              AI 审查·已拒绝
+            </Badge>
+          )}
+          {approvalStatus === 'approved' && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-green-600/20 text-green-400 border-green-600/30">
+              {t('ai.chat.toolApproved')}
+            </Badge>
+          )}
+          {approvalStatus === 'denied' && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-red-600/20 text-red-400 border-red-600/30">
+              {t('ai.chat.toolDenied')}
+            </Badge>
+          )}
+          {statusIcon}
+        </span>
       </button>
 
       {expanded && (
