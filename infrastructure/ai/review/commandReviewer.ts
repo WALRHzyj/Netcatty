@@ -15,118 +15,52 @@ export interface ReviewResult {
 }
 
 // ---------------------------------------------------------------------------
-// Quick pre-filter — catches obviously-safe commands without an AI round-trip.
-// These are common read-only diagnostics that the blocklist already won't
-// flag but that the review AI might conservatively mark as caution.
-// ---------------------------------------------------------------------------
-
-/** Known read-only binaries — no side effects, safe to execute. */
-const SAFE_BINARIES = new Set([
-  // File / directory listing
-  'ls', 'dir', 'tree', 'stat', 'file', 'realpath', 'readlink',
-  // Content viewing
-  'cat', 'head', 'tail', 'less', 'more', 'nl', 'od', 'hexdump', 'xxd',
-  // Searching
-  'grep', 'egrep', 'fgrep', 'find', 'locate', 'which', 'whereis', 'type',
-  // System info
-  'uname', 'hostname', 'hostnamectl', 'uptime', 'date', 'cal', 'who', 'w',
-  'whoami', 'id', 'groups', 'env', 'printenv', 'locale', 'ulimit',
-  // Process info
-  'ps', 'pgrep', 'pidof', 'top', 'htop', 'pstree',
-  // Disk / device info (READ-ONLY variants)
-  'df', 'du', 'lsblk', 'blkid', 'findmnt', 'mount', 'losetup',
-  // Hardware info
-  'lscpu', 'lsmem', 'lsusb', 'lspci', 'lshw', 'dmidecode',
-  // Network diagnostics (read-only)
-  'ping', 'ping6', 'traceroute', 'traceroute6', 'tracepath', 'dig', 'nslookup',
-  'host', 'ss', 'netstat', 'ip', 'ifconfig', 'iwconfig', 'ethtool',
-  // Package queries
-  'dpkg-query', 'rpm', 'apk', 'snap', 'flatpak',
-  // Git read-only
-  'git',
-]);
-/** Commands that are safe ONLY with read-only flags. */
-const SAFE_BINARIES_READONLY_FLAGS = new Set([
-  'systemctl', 'service', 'journalctl', 'docker', 'kubectl', 'podman',
-  'apt-cache', 'apt', 'apt-get', 'yum', 'dnf', 'zypper', 'brew', 'pacman',
-  'pip', 'pip3', 'npm', 'cargo',
-]);
-
-/** Flags that indicate read-only intent. */
-const READONLY_FLAGS = /^--?(help|version|list|info|query|search|show|get|cat|inspect|logs|events|display|print|check|verify|test|status|history|config)\b/i;
-
-function resolveMainCommand(command: string): string {
-  // Strip leading variable assignments, env overrides, and sudo.
-  let cmd = command.replace(/^\s*(?:sudo\s+)*/, '');
-  cmd = cmd.replace(/^[A-Za-z_][\w]*=\S+\s+/, ''); // FOO=bar cmd
-  // Take the first word (accounting for paths like /usr/bin/ls)
-  const match = cmd.match(/^([^\s|;&]+)/);
-  if (!match) return '';
-  const bin = match[1];
-  // Strip path prefix, keep basename
-  return bin.replace(/^.*\//, '');
-}
-
-/**
- * Quick heuristic: is this command OBVIOUSLY read-only?
- * Only returns true when we're very confident — false means "need AI review".
- */
-function looksObviouslySafe(command: string): boolean {
-  const main = resolveMainCommand(command);
-  if (!main) return false;
-
-  // Known safe binary
-  if (SAFE_BINARIES.has(main)) return true;
-
-  // Binary that's safe only with read-only flags
-  if (SAFE_BINARIES_READONLY_FLAGS.has(main)) {
-    // Check if the command uses read-only flags/subcommands
-    const afterCmd = command.slice(command.indexOf(main) + main.length);
-    const firstArg = afterCmd.trim().split(/\s+/)[0] || '';
-    if (READONLY_FLAGS.test(firstArg) || READONLY_FLAGS.test('-' + firstArg)) {
-      return true;
-    }
-    // Also check for subcommands like "docker ps", "kubectl get"
-    const knownSafeSubcommands = /^(ps|inspect|logs|images|info|version|get|describe|explain|top|events)\b/i;
-    if (knownSafeSubcommands.test(firstArg)) return true;
-  }
-
-  return false;
-}
-
-// ---------------------------------------------------------------------------
-// Review system prompt — kept concise to minimise per-review token cost.
+// Review system prompt — rule-based, not enumeration-based.
+//
+// The AI has broad knowledge of shell commands; we give it PRINCIPLES and
+// let it apply them.  Never enumerate specific commands here — that would
+// be both incomplete and brittle.  The AI knows more commands than we do.
 // ---------------------------------------------------------------------------
 const REVIEW_SYSTEM_PROMPT = [
-  '你是命令安全审查助手。严格按以下标准评估风险，只返回 JSON：',
+  '你是运维命令安全审查助手。根据以下原则评估命令风险，只返回 JSON：',
   '',
-  'safe — 无破坏性（只读 / 查询 / 诊断）：',
-  '  文件/目录查看：cat, less, head, tail, grep, find, ls, tree, stat, file',
-  '  磁盘/设备查询：df, du, lsblk, blkid, findmnt, mount（无参数）, losetup -l',
-  '  系统信息：uname, hostname, uptime, who, w, date, ps, top, free, vmstat, iostat',
-  '  网络诊断：ping, traceroute, dig, nslookup, ss -tlnp, netstat, ip addr/show, curl -I/HEAD',
-  '  硬件查询：lscpu, lsmem, lsusb, lspci, dmidecode -t',
-  '  服务状态：systemctl status, service status, journalctl（只读）',
-  '  容器/K8s只读：docker ps/inspect/logs/images, kubectl get/describe/logs',
-  '  Git只读：log, status, diff, show, 任何 --help/--version 命令',
-  '  包查询：apt-cache search/show, yum list/info, brew info/search, pip show/list',
-  '  注意：2>/dev/null 静默错误输出、|| 回退到安全命令，这些不改变风险等级',
+  '## 判断原则',
   '',
-  'caution — 有影响但非灾难：',
-  '  文件修改（sed -i, awk 写入, tee, 重定向>写入非系统文件）',
-  '  包安装/更新（apt-get install, yum install, pip install, npm install）',
-  '  服务变更（systemctl start/stop/restart, service restart）',
-  '  进程管理（kill, pkill）, 用户管理（useradd, usermod）, 文件权限修改',
-  '  Docker变更（restart/stop/start/exec, 非特权的docker run）',
+  '**safe — 无破坏性，自动放行：**',
+  '- 命令只读取/查询/展示信息，不修改系统状态',
+  '- 查看文件内容、列出目录、搜索文本、显示进程/磁盘/内存/网络状态',
+  '- 查询服务状态、容器状态、K8s 资源、数据库（只读 SELECT）',
+  '- 网络诊断（ping、DNS 查询、路由追踪、HTTP HEAD 请求）',
+  '- 查看日志、系统信息、硬件信息、内核参数',
+  '- 任何命令的 --help / --version / -h / -V 调用',
+  '- 包管理器的搜索/查看/列表操作（不安装不卸载）',
+  '- Git 的只读操作（log、status、diff、show）',
+  '- 用 2>/dev/null 抑制错误、|| 回退到安全命令，这些不影响风险判定',
   '',
-  'dangerous — 显著破坏性：',
-  '  递归强删（rm -rf, find -delete）, 磁盘格式化（mkfs, fdisk 写入, parted 写入, dd 写磁盘）',
-  '  关机重启（shutdown, reboot, halt, poweroff）, fork炸弹/资源耗尽',
-  '  权限开放（chmod 777 -R /, chmod -R 777 系统目录）',
-  '  数据库破坏（DROP DATABASE/TABLE, TRUNCATE）',
-  '  防火墙清空（iptables -F/-X, ufw disable）',
-  '  编码混淆命令（base64 -d, eval, xxd -r）, sudo 配合危险操作',
-  '  覆盖系统关键文件（> /etc/passwd, > /etc/shadow）',
+  '**caution — 有影响但非灾难，需用户确认：**',
+  '- 命令会修改文件、安装软件、变更服务状态',
+  '- 文件写入（包括重定向 > / >>）、文件内容替换（sed -i）',
+  '- 包安装/升级/卸载、服务启动/停止/重启',
+  '- 进程终止（kill / pkill）、用户/组管理、权限修改',
+  '- 容器/镜像的创建、启动、停止、删除',
+  '- 非特权环境下的常规运维操作',
+  '',
+  '**dangerous — 显著破坏性，直接拒绝：**',
+  '- 命令会导致不可逆的数据丢失或系统不可用',
+  '- 递归/批量强制删除、磁盘格式化/分区、dd 直接写块设备',
+  '- 系统关机/重启、内核模块装卸、防火墙规则清空',
+  '- 权限过度开放（chmod 777 递归系统目录）',
+  '- 数据库/表的删除或清空（DROP / TRUNCATE）',
+  '- 覆盖系统关键文件（/etc/passwd、/etc/shadow、/etc/sudoers）',
+  '- 任何经过编码/混淆的命令（base64 -d 后执行、eval 动态代码、xxd 反向）',
+  '- fork 炸弹、无限循环、资源耗尽攻击',
+  '- 敏感数据外传（curl/wget POST 机密文件到外部地址）',
+  '',
+  '## 注意事项',
+  '- 不要被命令名称迷惑——关注命令的实际操作和参数',
+  '- 管道中的每个命令段独立评估，取最高风险等级',
+  '- sudo 本身不改变风险等级，但 sudo 后面跟危险操作就是 dangerous',
+  '- 不确定时宁可判为 caution，让用户决定',
   '',
   '返回格式（只返回 JSON，不要其他内容）：',
   '{"risk":"safe|caution|dangerous","reason":"30字以内中文理由"}',
@@ -154,7 +88,7 @@ export interface ReviewModel {
 
 /**
  * A long-lived review session that reuses a single model instance and grows a
- * conversation transcript so the model remembers the classification framework
+ * conversation transcript so the model remembers the classification principles
  * across multiple commands without re-sending the full system prompt every call.
  *
  * Usage:
@@ -166,9 +100,8 @@ export interface ReviewModel {
  */
 export class CommandReviewSession {
   private readonly model: ReviewModel;
-  /** Accumulated conversation — first message is the system prompt. */
+  /** Accumulated conversation — keeps the model's context across calls. */
   private transcript: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-  /** Keep the transcript bounded so it never grows unbounded. */
   private static readonly MAX_TRANSCRIPT_TURNS = 20;
 
   constructor(model: ReviewModel) {
@@ -182,25 +115,14 @@ export class CommandReviewSession {
   /**
    * Review a shell command for risk.
    *
-   * A quick heuristic pre-filter catches obviously-safe commands (known
-   * read-only binaries) without an AI round-trip. Everything else goes to
-   * the review model.
-   *
-   * The first AI call sends the full system prompt. Subsequent calls include
-   * the conversation history so the model already knows the format, which
-   * reduces effective per-command token cost when the provider supports
-   * prompt caching.
+   * Every command goes through the AI review model — we rely on its broad
+   * knowledge of shell commands rather than hardcoded lists.  The first call
+   * sends the full system prompt; subsequent calls include conversation
+   * history so the model already knows the principles.
    */
   async review(command: string, signal?: AbortSignal): Promise<ReviewResult> {
-    // ── Quick pre-filter: obviously read-only → safe ─────────────────
-    if (looksObviouslySafe(command)) {
-      return { risk: 'safe', reason: '命令安全，自动放行' };
-    }
+    const userMessage = `审查命令：\n\`\`\`\n${command}\n\`\`\``;
 
-    // ── AI review ────────────────────────────────────────────────────
-    const userMessage = this.buildUserMessage(command);
-
-    // Build messages for this call — include transcript for session persistence.
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: REVIEW_SYSTEM_PROMPT },
       ...this.transcript,
@@ -210,7 +132,6 @@ export class CommandReviewSession {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REVIEW_TIMEOUT_MS);
 
-    // Link external signal
     const onExternalAbort = () => controller.abort();
     signal?.addEventListener('abort', onExternalAbort, { once: true });
 
@@ -225,14 +146,13 @@ export class CommandReviewSession {
 
       const text = result.text?.trim() ?? '';
 
-      // Record the turn in transcript
+      // Record the turn so the model retains context across calls.
       this.transcript.push({ role: 'user', content: userMessage });
       this.transcript.push({ role: 'assistant', content: text });
       this.pruneTranscript();
 
       return this.parseResult(text);
     } catch (err: unknown) {
-      // Review failed — fail open (caution) so the user can decide.
       console.warn('[CommandReview] Review call failed, falling back to caution:', err);
       const reason =
         err instanceof Error
@@ -247,7 +167,7 @@ export class CommandReviewSession {
     }
   }
 
-  /** Reset transcript — useful when the chat session context changes. */
+  /** Reset transcript — called when the chat session is cleared. */
   reset(): void {
     this.transcript = [];
   }
@@ -256,12 +176,7 @@ export class CommandReviewSession {
   // Internals
   // -----------------------------------------------------------------------
 
-  private buildUserMessage(command: string): string {
-    return `审查命令：\n\`\`\`\n${command}\n\`\`\``;
-  }
-
   private parseResult(text: string): ReviewResult {
-    // Try to extract a JSON object from the response.
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       try {
@@ -280,40 +195,30 @@ export class CommandReviewSession {
           };
         }
       } catch {
-        // JSON parse failed — fall through to fallback.
+        // JSON parse failed — fall through to keyword fallback.
       }
     }
 
-    // Best-effort keyword fallback when JSON parsing fails.
+    // Keyword fallback when the model doesn't return valid JSON.
     const lower = text.toLowerCase();
-    if (lower.includes('dangerous')) {
-      return { risk: 'dangerous', reason: '审查判断为危险操作' };
-    }
-    if (lower.includes('safe')) {
-      return { risk: 'safe', reason: '审查判断为安全操作' };
-    }
-    // Default: uncertain → ask user.
+    if (lower.includes('dangerous')) return { risk: 'dangerous', reason: '审查判断为危险操作' };
+    if (lower.includes('safe')) return { risk: 'safe', reason: '审查判断为安全操作' };
     return { risk: 'caution', reason: '审查 AI 返回格式异常，需人工确认' };
   }
 
   private pruneTranscript(): void {
-    const maxMessages = CommandReviewSession.MAX_TRANSCRIPT_TURNS * 2; // user + assistant per turn
+    const maxMessages = CommandReviewSession.MAX_TRANSCRIPT_TURNS * 2;
     if (this.transcript.length > maxMessages) {
       this.transcript = this.transcript.slice(-maxMessages);
     }
   }
 }
 
-// Re-export the pre-filter for use in the approval layer as an additional
-// shortcut before the AI review round-trip.
-export { looksObviouslySafe };
-
 // ---------------------------------------------------------------------------
 // Side-channel: review result tracking.
 //
-// When the review AI approves a command, we stash the result here so the
-// stream processor can show a visible "审查通过" indicator in the chat.
-// The result is consumed once when the tool-result chunk arrives.
+// When the review AI approves or denies a command, we stash the result here
+// so the stream processor can show a visible indicator in the chat.
 // ---------------------------------------------------------------------------
 const reviewResults = new Map<string, ReviewResult>();
 
@@ -322,7 +227,7 @@ export function recordReviewResult(toolCallId: string, result: ReviewResult): vo
   reviewResults.set(toolCallId, result);
 }
 
-/** Consume a review result (called from the stream processor). */
+/** Consume and remove a review result (called from the stream processor). */
 export function consumeReviewResult(toolCallId: string): ReviewResult | undefined {
   const result = reviewResults.get(toolCallId);
   reviewResults.delete(toolCallId);
