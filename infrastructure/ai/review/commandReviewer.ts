@@ -75,11 +75,14 @@ const REVIEW_TIMEOUT_MS = 10_000;
 // ---------------------------------------------------------------------------
 // Model type — matches the return type of createModelFromConfig.
 // ---------------------------------------------------------------------------
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyFunction = (...args: any[]) => Promise<any>;
+
 export interface ReviewModel {
   readonly modelId: string;
   readonly provider: string;
-  doGenerate?: (...args: any[]) => Promise<any>;
-  doStream?: (...args: any[]) => Promise<any>;
+  doGenerate?: AnyFunction;
+  doStream?: AnyFunction;
 }
 
 // ---------------------------------------------------------------------------
@@ -136,6 +139,7 @@ export class CommandReviewSession {
     signal?.addEventListener('abort', onExternalAbort, { once: true });
 
     try {
+      /* eslint-disable @typescript-eslint/no-explicit-any */
       const result = await generateText({
         model: this.model as any,
         messages: messages as any,
@@ -143,6 +147,7 @@ export class CommandReviewSession {
         maxOutputTokens: REVIEW_MAX_TOKENS,
         abortSignal: controller.signal,
       });
+      /* eslint-enable @typescript-eslint/no-explicit-any */
 
       const text = result.text?.trim() ?? '';
 

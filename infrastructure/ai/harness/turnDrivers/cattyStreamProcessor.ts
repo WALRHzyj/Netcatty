@@ -138,6 +138,7 @@ export async function processCattyStream(input: ProcessCattyStreamInput): Promis
       ? (() => {
           const existing = reviewSessionCache.get(runtimeContext.chatSessionId);
           if (existing) return existing;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const session = new CommandReviewSession(model as any);
           reviewSessionCache.set(runtimeContext.chatSessionId, session);
           return session;
