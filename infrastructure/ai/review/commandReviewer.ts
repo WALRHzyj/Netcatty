@@ -151,6 +151,7 @@ export class CommandReviewSession {
       /* eslint-enable @typescript-eslint/no-explicit-any */
 
       const text = result.text?.trim() ?? '';
+      console.log('[CommandReview] Raw response:', text.slice(0, 200));
       const parsed = this.parseResult(text);
 
       console.log('[CommandReview] Result:', parsed.risk, '|', parsed.reason);
@@ -186,32 +187,41 @@ export class CommandReviewSession {
   // -----------------------------------------------------------------------
 
   private parseResult(text: string): ReviewResult {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    // Strip markdown code fences that some models wrap JSON in.
+    let cleaned = text
+      .replace(/^```(?:json)?\s*\n?/i, '')
+      .replace(/\n?```\s*$/i, '')
+      .trim();
+
+    // Try to find and parse a JSON object.
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       try {
         const parsed = JSON.parse(jsonMatch[0]);
-        if (
-          parsed.risk === 'safe' ||
-          parsed.risk === 'caution' ||
-          parsed.risk === 'dangerous'
-        ) {
+        const risk = parsed.risk;
+        if (risk === 'safe' || risk === 'caution' || risk === 'dangerous') {
           return {
-            risk: parsed.risk,
+            risk,
             reason:
-              typeof parsed.reason === 'string'
-                ? parsed.reason.slice(0, 100)
+              typeof parsed.reason === 'string' && parsed.reason.trim()
+                ? parsed.reason.trim().slice(0, 100)
                 : '未提供具体原因',
           };
         }
+        // Handle Chinese risk labels some models return.
+        if (risk === '安全' || risk === '安全操作') return { risk: 'safe', reason: parsed.reason ?? '安全命令' };
+        if (risk === '需确认' || risk === '警告') return { risk: 'caution', reason: parsed.reason ?? '需确认' };
+        if (risk === '危险' || risk === '危险操作') return { risk: 'dangerous', reason: parsed.reason ?? '危险命令' };
       } catch {
         // JSON parse failed — fall through to keyword fallback.
       }
     }
 
-    // Keyword fallback when the model doesn't return valid JSON.
-    const lower = text.toLowerCase();
-    if (lower.includes('dangerous')) return { risk: 'dangerous', reason: '审查判断为危险操作' };
-    if (lower.includes('safe')) return { risk: 'safe', reason: '审查判断为安全操作' };
+    // Keyword fallback.
+    const lower = cleaned.toLowerCase();
+    if (lower.includes('dangerous') || cleaned.includes('危险')) return { risk: 'dangerous', reason: '审查判断为危险操作' };
+    if (lower.includes('safe') || cleaned.includes('安全')) return { risk: 'safe', reason: '审查判断为安全操作' };
+    console.warn('[CommandReview] Could not parse risk from:', text.slice(0, 200));
     return { risk: 'caution', reason: '审查 AI 返回格式异常，需人工确认' };
   }
 
