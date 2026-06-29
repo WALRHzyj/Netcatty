@@ -56,7 +56,7 @@ export interface ScriptRunParams {
   sessionId?: string;
   sessionIds?: string[];
   mode?: 'sequential' | 'parallel';
-  permissionMode?: 'observer' | 'confirm' | 'auto';
+  permissionMode?: 'observer' | 'confirm' | 'auto' | 'review';
   /** Renderer-provided session state (worker SSH sessions are not in main-process map). */
   sessionMeta?: {
     connected?: boolean;
