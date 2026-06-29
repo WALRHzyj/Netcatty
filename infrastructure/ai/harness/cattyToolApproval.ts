@@ -5,6 +5,7 @@ import { resolveCapabilityId } from './permissionGrants';
 import { checkCommandSafety } from '../cattyAgent/safety';
 import { getActivePermissionGrants, PermissionGrantStore } from './permissionGrants';
 import type { CommandReviewSession } from '../review/commandReviewer';
+import { recordReviewResult } from '../review/commandReviewer';
 import cattyToolSpecs from './generated/cattyToolSpecs.json';
 
 type CattyToolPolicySpec = {
@@ -110,7 +111,10 @@ export function buildCattyToolApproval(input: {
 
         switch (result.risk) {
           case 'safe':
-            // Auto-approve without interrupting the user.
+            // Auto-approve without interrupting the user, but record the
+            // review result so the stream processor can show a visible
+            // "AI 审查通过" indicator in the chat.
+            recordReviewResult(toolCall.toolCallId, result);
             return undefined;
 
           case 'dangerous':

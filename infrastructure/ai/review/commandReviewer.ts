@@ -194,7 +194,7 @@ export class CommandReviewSession {
   async review(command: string, signal?: AbortSignal): Promise<ReviewResult> {
     // ── Quick pre-filter: obviously read-only → safe ─────────────────
     if (looksObviouslySafe(command)) {
-      return { risk: 'safe', reason: '已知只读命令，自动放行' };
+      return { risk: 'safe', reason: '命令安全，自动放行' };
     }
 
     // ── AI review ────────────────────────────────────────────────────
@@ -307,3 +307,24 @@ export class CommandReviewSession {
 // Re-export the pre-filter for use in the approval layer as an additional
 // shortcut before the AI review round-trip.
 export { looksObviouslySafe };
+
+// ---------------------------------------------------------------------------
+// Side-channel: review result tracking.
+//
+// When the review AI approves a command, we stash the result here so the
+// stream processor can show a visible "审查通过" indicator in the chat.
+// The result is consumed once when the tool-result chunk arrives.
+// ---------------------------------------------------------------------------
+const reviewResults = new Map<string, ReviewResult>();
+
+/** Record a review result for a tool call (called from the approval handler). */
+export function recordReviewResult(toolCallId: string, result: ReviewResult): void {
+  reviewResults.set(toolCallId, result);
+}
+
+/** Consume a review result (called from the stream processor). */
+export function consumeReviewResult(toolCallId: string): ReviewResult | undefined {
+  const result = reviewResults.get(toolCallId);
+  reviewResults.delete(toolCallId);
+  return result;
+}
