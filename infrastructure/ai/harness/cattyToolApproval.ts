@@ -2,7 +2,6 @@ import type { ToolApprovalConfiguration } from 'ai';
 import type { AIPermissionMode } from '../types';
 import { requestApproval as defaultRequestApproval } from '../shared/approvalGate';
 import { resolveCapabilityId } from './permissionGrants';
-import { checkCommandSafety } from '../cattyAgent/safety';
 import { getActivePermissionGrants, PermissionGrantStore } from './permissionGrants';
 import type { CommandReviewSession } from '../review/commandReviewer';
 import { recordReviewResult } from '../review/commandReviewer';
@@ -51,7 +50,7 @@ export function buildCattyToolApproval(input: {
   const {
     permissionMode,
     chatSessionId,
-    commandBlocklist,
+    commandBlocklist: _commandBlocklist,
     reviewSession,
     requestApproval = defaultRequestApproval,
   } = input;
@@ -72,30 +71,25 @@ export function buildCattyToolApproval(input: {
       return undefined;
     }
 
+    // Bypassable tools (terminal_stop, etc.) must always auto-approve,
+    // even in review mode, so the emergency-stop path is never gated on
+    // user input or an approval timeout.
+    if (spec.policy.bypassesApproval) {
+      return undefined;
+    }
+
     const args = (toolCall.input ?? {}) as Record<string, unknown>;
     let reviewNote: string | undefined;
 
-    // ── review mode — three-layer defence ─────────────────────────────
+    // ── review mode — two-layer defence ──────────────────────────────
     if (permissionMode === 'review') {
       const command = extractCommand(toolCall.toolName, args);
 
-      // Layer 1: Blacklist — always deny dangerous commands
-      if (command && commandBlocklist?.length) {
-        const safety = checkCommandSafety(command, commandBlocklist);
-        if (safety.blocked) {
-          recordReviewResult(toolCall.toolCallId, {
-            risk: 'dangerous',
-            reason: `匹配规则: ${safety.matchedPattern}`,
-            source: 'blacklist',
-          });
-          return {
-            type: 'denied' as const,
-            reason: `命令被黑名单拦截。匹配规则: ${safety.matchedPattern}`,
-          };
-        }
-      }
-
-      // Layer 2: Whitelist — always approve user-granted command patterns
+      // Layer 1: Whitelist — always approve user-granted command patterns
+      // The session-aware shell blocklist runs later inside the executor
+      // (resolveExecContext in execHandlers.cjs), which correctly skips
+      // blocklist patterns for network-device and serial sessions where
+      // commands like "shutdown" are routine vendor CLI operations.
       if (command) {
         const grants = getActivePermissionGrants();
         if (grants.length > 0) {
@@ -116,7 +110,7 @@ export function buildCattyToolApproval(input: {
         }
       }
 
-      // Layer 3: AI review — classify risk and decide
+      // Layer 2: AI review — classify risk and decide
       if (command && reviewSession) {
         const result = await reviewSession.review(command);
         // Tag the result so the UI badge shows the correct source label.

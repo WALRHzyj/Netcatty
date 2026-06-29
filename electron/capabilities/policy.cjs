@@ -74,7 +74,12 @@ function evaluateRpcPermission({
     };
   }
 
-  const requiresApproval = permissionMode === PERMISSION_MODES.CONFIRM
+  // REVIEW mode currently maps to the same approval gate as CONFIRM for
+  // MCP/RPC callers, so external agents (Codex, etc.) cannot bypass user
+  // approval.  Once an AI review path is wired into the bridge, this can be
+  // updated to layer the review verdict before falling through to the user.
+  const requiresApproval = (permissionMode === PERMISSION_MODES.CONFIRM
+    || permissionMode === PERMISSION_MODES.REVIEW)
     && requiresApprovalInConfirmMode(capability, surface);
 
   return {
