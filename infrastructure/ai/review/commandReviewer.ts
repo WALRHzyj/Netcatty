@@ -66,8 +66,11 @@ const REVIEW_SYSTEM_PROMPT = [
   '{"risk":"safe|caution|dangerous","reason":"30字以内中文理由"}',
 ].join('\n');
 
-/** Max tokens the review model may produce — a risk JSON object fits in ~50. */
-const REVIEW_MAX_TOKENS = 120;
+/** Max tokens for review output. Set generously (512) because reasoning
+ *  models consume output budget on internal thinking before producing the
+ *  final answer.  A risk JSON only needs ~50 tokens, but the headroom
+ *  prevents empty responses from models that think before they speak. */
+const REVIEW_MAX_TOKENS = 512;
 
 /** Hard timeout for a single review call. Beyond this the review fails open (→ caution). */
 const REVIEW_TIMEOUT_MS = 10_000;
