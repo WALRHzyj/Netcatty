@@ -124,6 +124,7 @@ export class CommandReviewSession {
    * history so the model already knows the principles.
    */
   async review(command: string, signal?: AbortSignal): Promise<ReviewResult> {
+    console.log('[CommandReview] Reviewing:', command.slice(0, 80));
     const userMessage = `审查命令：\n\`\`\`\n${command}\n\`\`\``;
 
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
@@ -150,15 +151,18 @@ export class CommandReviewSession {
       /* eslint-enable @typescript-eslint/no-explicit-any */
 
       const text = result.text?.trim() ?? '';
+      const parsed = this.parseResult(text);
+
+      console.log('[CommandReview] Result:', parsed.risk, '|', parsed.reason);
 
       // Record the turn so the model retains context across calls.
       this.transcript.push({ role: 'user', content: userMessage });
       this.transcript.push({ role: 'assistant', content: text });
       this.pruneTranscript();
 
-      return this.parseResult(text);
+      return parsed;
     } catch (err: unknown) {
-      console.warn('[CommandReview] Review call failed, falling back to caution:', err);
+      console.error('[CommandReview] Review call FAILED:', err);
       const reason =
         err instanceof Error
           ? err.name === 'AbortError'

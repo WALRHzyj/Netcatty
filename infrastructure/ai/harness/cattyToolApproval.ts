@@ -78,6 +78,10 @@ export function buildCattyToolApproval(input: {
     if (permissionMode === 'review') {
       const command = extractCommand(toolCall.toolName, args);
 
+      console.log('[CattyApproval] Review mode — command:', command?.slice(0, 60),
+        '| hasReviewSession:', !!reviewSession,
+        '| hasBlocklist:', !!commandBlocklist?.length);
+
       // Layer 1: Blacklist — always deny dangerous commands
       if (command && commandBlocklist?.length) {
         const safety = checkCommandSafety(command, commandBlocklist);
@@ -135,8 +139,13 @@ export function buildCattyToolApproval(input: {
       }
 
       // No command to review or no review session → fall through to confirm.
-      // If we have a command but review isn't available, we must NOT auto-approve;
-      // instead we show the confirmation dialog (safe default).
+      if (!command) {
+        console.log('[CattyApproval] No command extracted, falling through to confirm');
+      }
+      if (!reviewSession) {
+        console.warn('[CattyApproval] Review session is undefined! Falling through to confirm. ' +
+          'Check that the model was created and permission mode is "review".');
+      }
     }
 
     // ── confirm mode / review-caution fallback ─────────────────────────
