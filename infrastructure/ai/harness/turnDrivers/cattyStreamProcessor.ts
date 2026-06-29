@@ -14,7 +14,7 @@ import type { CattyToolsBundle } from '../capabilityTools';
 import { buildCattyToolApproval } from '../cattyToolApproval';
 import type { CattyRuntimeContext } from '../cattyRuntimeContext';
 import { buildCattyStreamTimeouts } from '../streamTimeouts';
-import { CommandReviewSession, consumeReviewResult } from '../../review/commandReviewer';
+import { CommandReviewSession } from '../../review/commandReviewer';
 
 // ---------------------------------------------------------------------------
 // Per-chat-session review session cache.
@@ -484,18 +484,10 @@ export async function processCattyStream(input: ProcessCattyStreamInput): Promis
         }
         case 'tool-result': {
           const typedChunk = chunk as ToolResultChunk;
-          let toolOutput = typedChunk.output ?? typedChunk.result;
-          const outputStr = typeof toolOutput === 'string' ? toolOutput : JSON.stringify(toolOutput);
-
-          // If the AI review approved this command, prepend a visible indicator.
-          const reviewResult = consumeReviewResult(typedChunk.toolCallId);
-          const displayContent = reviewResult
-            ? `🔍 AI 审查通过 · ${reviewResult.reason}\n\n${outputStr}`
-            : outputStr;
-
+          const toolOutput = typedChunk.output ?? typedChunk.result;
           appendToolResultToUi(
             typedChunk.toolCallId,
-            displayContent,
+            typeof toolOutput === 'string' ? toolOutput : JSON.stringify(toolOutput),
             isToolResultError(toolOutput),
           );
           break;

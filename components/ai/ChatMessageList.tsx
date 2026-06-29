@@ -10,6 +10,7 @@ import { AlertCircle, FileText, RotateCcw, SquareTerminal, X, ZoomIn, ZoomOut } 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../application/i18n/I18nProvider';
 import type { ChatMessage } from '../../infrastructure/ai/types';
+import { getReviewResult } from '../../infrastructure/ai/review/commandReviewer';
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import {
   Conversation,
@@ -462,6 +463,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                               ? "denied" as const
                               : undefined;
                         const pendingReq = pendingApprovals.get(tc.id);
+                        const review = getReviewResult(tc.id);
                         return (
                           <div key={tc.id} className="px-2 py-1.5">
                             <ToolCall
@@ -469,7 +471,8 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                               args={tc.arguments}
                               isInterrupted={!isPending}
                               approvalStatus={approvalStatus}
-                              reviewNote={pendingReq?.reviewNote}
+                              reviewNote={pendingReq?.reviewNote ?? review?.reason}
+                              reviewRisk={review?.risk}
                               onApproveOnce={() => handleApproveOnce(tc.id)}
                               onAlwaysAllow={() => handleAlwaysAllow(tc.id, pendingReq ?? {
                                 toolCallId: tc.id,
@@ -530,6 +533,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 const isPending = pendingApprovals.has(tc.id);
                 const resolved = resolvedApprovals.get(tc.id);
                 const pendingReq2 = pendingApprovals.get(tc.id);
+                const review2 = getReviewResult(tc.id);
                 const approvalStatus = isPending
                   ? "pending" as const
                   : resolved === true
@@ -544,7 +548,8 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       args={tc.arguments}
                       isLoading={isToolRunning && !isPending}
                       approvalStatus={approvalStatus}
-                      reviewNote={pendingReq2?.reviewNote}
+                      reviewNote={pendingReq2?.reviewNote ?? review2?.reason}
+                      reviewRisk={review2?.risk}
                       onApproveOnce={() => handleApproveOnce(tc.id)}
                       onAlwaysAllow={() => handleAlwaysAllow(tc.id, pendingReq2 ?? {
                         toolCallId: tc.id,
@@ -575,6 +580,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
                     isInterrupted={false}
                     approvalStatus={'pending'}
                     reviewNote={req.reviewNote}
+                    reviewRisk={getReviewResult(id)?.risk}
                     onApproveOnce={() => handleApproveOnce(id)}
                     onAlwaysAllow={() => handleAlwaysAllow(id, req)}
                     onReject={() => handleReject(id)}

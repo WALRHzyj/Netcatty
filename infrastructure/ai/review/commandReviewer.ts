@@ -249,7 +249,12 @@ export function recordReviewResult(toolCallId: string, result: ReviewResult): vo
   reviewResults.set(toolCallId, result);
 }
 
-/** Consume and remove a review result (called from the stream processor). */
+/** Peek at a review result without removing it (called from UI components). */
+export function getReviewResult(toolCallId: string): ReviewResult | undefined {
+  return reviewResults.get(toolCallId);
+}
+
+/** Consume and remove a review result (called from the stream processor for cleanup). */
 export function consumeReviewResult(toolCallId: string): ReviewResult | undefined {
   const result = reviewResults.get(toolCallId);
   reviewResults.delete(toolCallId);

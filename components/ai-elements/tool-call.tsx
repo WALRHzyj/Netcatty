@@ -147,12 +147,14 @@ export interface ToolCallProps extends HTMLAttributes<HTMLDivElement> {
   onAlwaysAllow?: () => void;
   /** AI review note shown prominently in the approval dialog (review mode). */
   reviewNote?: string;
+  /** Risk level from AI review — drives badge color. */
+  reviewRisk?: 'safe' | 'caution' | 'dangerous';
 }
 
 export const ToolCall = ({
   name, args, result, isError, isLoading, isInterrupted,
   approvalStatus, onApprove, onReject, onApproveOnce, onAlwaysAllow,
-  reviewNote, className, ...props
+  reviewNote, reviewRisk, className, ...props
 }: ToolCallProps) => {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
@@ -258,6 +260,22 @@ export const ToolCall = ({
           return <span className="font-mono text-muted-foreground/70 truncate">{name}</span>;
         })()}
         <span className="flex-1" />
+        {/* AI review badge — visible even when collapsed */}
+        {reviewNote && reviewRisk === 'safe' && (
+          <Badge className="text-[10px] px-1.5 py-0 bg-green-600/15 text-green-400 border-green-600/25">
+            AI 审查通过
+          </Badge>
+        )}
+        {reviewNote && reviewRisk === 'caution' && (
+          <Badge className="text-[10px] px-1.5 py-0 bg-yellow-600/15 text-yellow-400 border-yellow-600/25">
+            AI 审查·需确认
+          </Badge>
+        )}
+        {reviewNote && reviewRisk === 'dangerous' && (
+          <Badge className="text-[10px] px-1.5 py-0 bg-red-600/15 text-red-400 border-red-600/25">
+            AI 审查·已拒绝
+          </Badge>
+        )}
         {/* Approval badge for resolved approvals */}
         {approvalStatus === 'approved' && (
           <Badge className="text-[10px] px-1.5 py-0 bg-green-600/20 text-green-400 border-green-600/30">
@@ -274,6 +292,37 @@ export const ToolCall = ({
 
       {expanded && (
         <div className="border-t border-border/20">
+          {/* AI review reason — colored block */}
+          {reviewNote && (
+            <div className={cn(
+              'px-3 py-2 border-b border-border/10',
+              reviewRisk === 'safe' && 'bg-green-500/[0.04]',
+              reviewRisk === 'caution' && 'bg-yellow-500/[0.05]',
+              reviewRisk === 'dangerous' && 'bg-red-500/[0.04]',
+            )}>
+              <div className="flex items-start gap-1.5">
+                <span className={cn(
+                  'text-[10px] shrink-0 mt-px',
+                  reviewRisk === 'safe' && 'text-green-400',
+                  reviewRisk === 'caution' && 'text-yellow-400',
+                  reviewRisk === 'dangerous' && 'text-red-400',
+                )}>
+                  {reviewRisk === 'safe' ? '🟢' : reviewRisk === 'caution' ? '🟡' : '🔴'}
+                </span>
+                <p className={cn(
+                  'text-[10px] leading-snug',
+                  reviewRisk === 'safe' && 'text-green-400/80',
+                  reviewRisk === 'caution' && 'text-yellow-400/80',
+                  reviewRisk === 'dangerous' && 'text-red-400/80',
+                )}>
+                  <span className="font-medium">
+                    {reviewRisk === 'safe' ? 'AI 审查通过' : reviewRisk === 'caution' ? 'AI 审查·需确认' : 'AI 审查·已拒绝'}
+                  </span>
+                  <span className="opacity-70"> · {reviewNote}</span>
+                </p>
+              </div>
+            </div>
+          )}
           {args && Object.keys(args).length > 0 && (
             <div className="px-3 py-2">
               <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/30 mb-1">Arguments</div>
@@ -286,15 +335,6 @@ export const ToolCall = ({
           {/* Inline approval buttons */}
           {isPendingApproval && (
             <div className="min-w-0 px-3 py-2 border-t border-border/20">
-              {/* AI review note — prominent banner */}
-              {reviewNote && (
-                <div className="flex items-start gap-1.5 mb-2 px-2 py-1.5 rounded bg-purple-500/8 border border-purple-500/15">
-                  <span className="text-[10px] shrink-0 mt-px">🔍</span>
-                  <p className="text-[10px] leading-snug text-purple-300/80">
-                    <span className="font-medium">AI 审查：</span>{reviewNote}
-                  </p>
-                </div>
-              )}
               {!reviewNote && (
                 <p className="mb-2 text-[10px] leading-snug text-muted-foreground/40">
                   {t('ai.chat.toolApprovalHint')}
