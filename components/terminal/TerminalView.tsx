@@ -595,6 +595,7 @@ function TerminalViewInner({ ctx }: { ctx: TerminalViewContext }) {
                 filename={zmodem.filename}
                 transferred={zmodem.transferred}
                 total={zmodem.total}
+                bytesPerSecond={zmodem.bytesPerSecond}
                 fileIndex={zmodem.fileIndex}
                 fileCount={zmodem.fileCount}
                 finalizing={zmodem.finalizing}

@@ -41,6 +41,60 @@ type SelectionOverlayPosition = {
   top: number;
 } | null;
 
+type ZmodemToastInput = {
+  active?: boolean;
+  completed?: boolean;
+  error?: string | null;
+  filename?: string | null;
+  transferType?: 'upload' | 'download' | null;
+};
+
+type ZmodemToast =
+  | { kind: 'error'; message: string; title: string }
+  | { kind: 'success'; message: string; title: string }
+  | null;
+
+type ZmodemToastApi = {
+  success: (message: string, title?: string) => void;
+  error: (message: string, title?: string) => void;
+};
+
+export function resolveZmodemTransferToast(zmodem: ZmodemToastInput): ZmodemToast {
+  if (zmodem.active) return null;
+  if (zmodem.error) {
+    return { kind: 'error', message: zmodem.error, title: 'ZMODEM' };
+  }
+  if (!zmodem.completed) return null;
+
+  const action = zmodem.transferType === 'upload'
+    ? 'Uploaded'
+    : zmodem.transferType === 'download'
+      ? 'Downloaded'
+      : 'Transfer completed';
+  const message = zmodem.filename ? `${action}: ${zmodem.filename}` : action;
+  return { kind: 'success', message, title: 'ZMODEM' };
+}
+
+export function applyZmodemTransferToast(
+  zmodem: ZmodemToastInput,
+  toastedRef: { current: boolean },
+  toast: ZmodemToastApi,
+): void {
+  if (zmodem.active) {
+    toastedRef.current = false;
+    return;
+  }
+  if (toastedRef.current) return;
+  const zmodemToast = resolveZmodemTransferToast(zmodem);
+  if (!zmodemToast) return;
+  toastedRef.current = true;
+  if (zmodemToast.kind === 'error') {
+    toast.error(zmodemToast.message, zmodemToast.title);
+  } else {
+    toast.success(zmodemToast.message, zmodemToast.title);
+  }
+}
+
 const areSelectionOverlayPositionsEqual = (
   a: SelectionOverlayPosition,
   b: SelectionOverlayPosition,
@@ -201,22 +255,8 @@ export function useTerminalEffects(ctx: TerminalEffectsContext) {
   }, [isVisible]);
 
   useEffect(() => {
-    if (zmodem.active) {
-      zmodemToastedRef.current = false;
-      return;
-    }
-    if (zmodemToastedRef.current) return;
-    if (zmodem.error) {
-      zmodemToastedRef.current = true;
-      toast.error(zmodem.error, 'ZMODEM');
-    } else if (zmodem.filename) {
-      zmodemToastedRef.current = true;
-      toast.success(
-        `${zmodem.transferType === 'upload' ? 'Uploaded' : 'Downloaded'}: ${zmodem.filename}`,
-        'ZMODEM',
-      );
-    }
-  }, [zmodem.active, zmodem.error, zmodem.filename, zmodem.transferType]);
+    applyZmodemTransferToast(zmodem, zmodemToastedRef, toast);
+  }, [zmodem.active, zmodem.completed, zmodem.error, zmodem.filename, zmodem.transferType]);
 
 
   useEffect(() => {
