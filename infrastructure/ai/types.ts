@@ -14,6 +14,7 @@ export type AIProviderId =
   | 'zhipu'
   | 'doubao'
   | 'mimo'
+  | 'longcat'
   | 'custom';
 
 /**
@@ -430,6 +431,13 @@ export const PROVIDER_PRESETS: Record<AIProviderId, ProviderPreset> = {
     defaultModels: [
       'mimo-v2.5-pro',
       'mimo-v2.5',
+    ],
+  },
+  longcat: {
+    name: 'LongCat',
+    defaultBaseURL: 'https://api.longcat.chat/openai/v1',
+    defaultModels: [
+      'LongCat-2.0',
     ],
   },
   custom: { name: 'Custom', defaultBaseURL: '' },

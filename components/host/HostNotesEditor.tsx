@@ -11,7 +11,9 @@ const PREVIEW_PROSE_CLASS =
   "text-sm text-foreground/90 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0";
 
 function defaultNotesTab(notes: string, preferredTab?: "edit" | "preview"): "edit" | "preview" {
-  if (preferredTab) return preferredTab;
+  // Caller can opt-in to a predictable first-render tab.
+  if (preferredTab === "edit") return "edit";
+  if (preferredTab === "preview" && notes.trim()) return "preview";
   return notes.trim() ? "preview" : "edit";
 }
 
@@ -23,8 +25,6 @@ export interface HostNotesEditorProps {
   className?: string;
   showHeader?: boolean;
   defaultTab?: "edit" | "preview";
-  /** Minimum inner height for the editor / preview area. Defaults to 120 px. */
-  minHeight?: number;
 }
 
 export const HostNotesEditor: React.FC<HostNotesEditorProps> = ({
@@ -34,7 +34,6 @@ export const HostNotesEditor: React.FC<HostNotesEditorProps> = ({
   className,
   showHeader = true,
   defaultTab,
-  minHeight = 120,
 }) => {
   const { t } = useI18n();
   const [tab, setTab] = useState<"edit" | "preview">(() => defaultNotesTab(value, defaultTab));
@@ -61,7 +60,7 @@ export const HostNotesEditor: React.FC<HostNotesEditorProps> = ({
           <p className="text-xs text-muted-foreground">{t("hostDetails.notes.help")}</p>
         </div>
       )}
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "edit" | "preview")} className="flex-1 flex flex-col min-h-0">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "edit" | "preview")} className="flex-1 flex flex-col min-h-[360px]">
         <TabsList className="h-8 w-full shrink-0">
           <TabsTrigger value="edit" className="flex-1 text-xs">
             {t("hostDetails.notes.tab.edit")}
@@ -75,12 +74,11 @@ export const HostNotesEditor: React.FC<HostNotesEditorProps> = ({
             placeholder={t("hostDetails.notes.placeholder")}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="h-full w-full text-sm resize-none"
-            style={{ minHeight: `${minHeight}px` }}
+            className="h-full w-full min-h-[320px] text-sm resize-none"
           />
         </TabsContent>
         <TabsContent value="preview" className="flex-1 mt-2 min-h-0">
-          <ScrollArea className="h-full w-full rounded-md border border-border/60 bg-muted/20 p-3" style={{ minHeight: `${minHeight}px` }}>
+          <ScrollArea className="h-full w-full min-h-[320px] rounded-md border border-border/60 bg-muted/20 p-3">
             {trimmed ? (
               <LazyMessageResponse className={PREVIEW_PROSE_CLASS}>{trimmed}</LazyMessageResponse>
             ) : (

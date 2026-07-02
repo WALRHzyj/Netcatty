@@ -68,15 +68,32 @@ const VaultHostNotesManager: React.FC<VaultHostNotesManagerProps> = ({
   onUpdateHosts,
 }) => {
   const { t } = useI18n();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Initialize selectedId to the first host synchronously inside useState so
+  // that we never render the "select host" placeholder — the textarea mounts
+  // in its final state on the very first paint, which prevents the React 18
+  // styling/layout bug where the initially-rendered Textarea is un-editable.
+  const [selectedId, setSelectedId] = useState<string | null>(() =>
+    hosts.length > 0 ? hosts[0].id : null,
+  );
   const [drafts, setDrafts] = useState<Record<string, DraftState>>({});
+
+  // Seed draft for the initial host immediately.
+  useEffect(() => {
+    if (selectedId) {
+      const h = hosts.find((x) => x.id === selectedId);
+      if (h) {
+        setDrafts((prev) => (prev[selectedId] ? prev : { ...prev, [selectedId]: { notes: h.notes ?? "", dirty: false } }));
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- run once on mount
+
   const hostMap = useMemo(() => {
     const m = new Map<string, Host>();
     for (const h of hosts) m.set(h.id, h);
     return m;
   }, [hosts]);
 
-  // Seed draft lazily on first select; keep selection valid on host list change.
+  // Keep selection valid on host list change.
   useEffect(() => {
     if (selectedId && !hostMap.has(selectedId)) {
       setSelectedId(hosts.length > 0 ? hosts[0].id : null);
@@ -154,7 +171,7 @@ const VaultHostNotesManager: React.FC<VaultHostNotesManagerProps> = ({
   }
 
   return (
-    <div className="h-full flex">
+    <div className="flex min-h-[480px]">
       {/* Left rail: host list */}
       <div className="w-[220px] shrink-0 border-r border-border/30 flex flex-col">
         <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/30 bg-secondary/20">
@@ -186,7 +203,7 @@ const VaultHostNotesManager: React.FC<VaultHostNotesManagerProps> = ({
       {/* Right pane: active host editor */}
       <div className="flex-1 min-w-0 flex flex-col">
         {selectedHost ? (
-          <div className="h-full flex flex-col min-h-[480px]">
+          <div className="min-h-[480px] flex flex-col grow">
             {/* Header with title + dirty indicator + action buttons */}
             <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-border/30 bg-secondary/20 shrink-0">
               <div className="min-w-0">
@@ -224,14 +241,17 @@ const VaultHostNotesManager: React.FC<VaultHostNotesManagerProps> = ({
                 </Button>
               </div>
             </div>
+            <div className="px-4 py-1.5 text-[11px] text-muted-foreground/80 border-b border-border/30 bg-background shrink-0">
+              {t("hostNotesManager.aiInjectionHint")}
+            </div>
             {/* Editor area */}
             <div className="flex-1 overflow-hidden">
               <HostNotesEditor
-                key={selectedHost.id}
+                panelKey={selectedHost.id}
                 value={selectedDraft?.notes ?? selectedHost.notes ?? ""}
                 onChange={(v) => handleNotesChange(selectedHost.id, v)}
                 className="h-full"
-                minHeight={320}
+                defaultTab="edit"
               />
             </div>
           </div>

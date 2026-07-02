@@ -361,7 +361,7 @@ const AIPromptPresetsManager: React.FC<AIPromptPresetsManagerProps> = ({
             title={t("aiPromptPresets.section.user.title")}
             desc={t("aiPromptPresets.section.user.desc")}
           >
-            <div className="h-[420px] rounded-md border border-border/40 overflow-hidden">
+            <div className="rounded-md border border-border/40 overflow-hidden">
               <VaultHostNotesManager
                 hosts={hosts}
                 onUpdateHosts={onUpdateHosts ?? (() => {})}

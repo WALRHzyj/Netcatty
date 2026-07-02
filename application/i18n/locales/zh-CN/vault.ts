@@ -345,6 +345,7 @@ export const zhCNVaultMessages: Messages = {
   'hostNotesManager.hosts.count': '共 {count} 台主机',
   'hostNotesManager.editingFor': '主机 {id}',
   'hostNotesManager.selectHost': '请在左侧列表选择一台主机以查看或编辑它的备注。',
+  'hostNotesManager.aiInjectionHint': '该主机的备注会在该主机连接时自动拼入 AI 对话的系统提示词。',
   'hostNotesManager.save': '保存',
   'hostNotesManager.revert': '撤销',
   'hostNotesManager.unsaved': '未保存',

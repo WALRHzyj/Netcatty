@@ -6,7 +6,8 @@ configuration UI.
 ## Originally authored for netcatty
 
 - `anthropic.svg`, `openai.svg`, `google.svg`, `ollama.svg`, `openrouter.svg`,
-  `custom.svg` — netcatty.
+  `custom.svg`, `longcat.svg` — netcatty (derived from LongCat official brand
+  mark https://s3plus.meituan.net/aigc-media-resources/longcat/yeqian-logo.svg).
 
 ## From [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Xiaomi_logo_(2021-).svg)
 

@@ -809,6 +809,7 @@ export const enVaultMessages: Messages = {
   'hostNotesManager.hosts.count': '{count} hosts',
   'hostNotesManager.editingFor': 'Host {id}',
   'hostNotesManager.selectHost': 'Select a host from the list on the left to view or edit its notes.',
+  'hostNotesManager.aiInjectionHint': 'Notes are automatically appended to each new AI conversation when this host is connected.',
   'hostNotesManager.save': 'Save',
   'hostNotesManager.revert': 'Revert',
   'hostNotesManager.unsaved': 'Unsaved',

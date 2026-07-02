@@ -796,6 +796,7 @@ export const ruVaultMessages: Messages = {
   'hostNotesManager.hosts.count': '{count} хостов',
   'hostNotesManager.editingFor': 'Хост {id}',
   'hostNotesManager.selectHost': 'Выберите хост в списке слева, чтобы просмотреть или изменить его заметку.',
+  'hostNotesManager.aiInjectionHint': 'Заметки автоматически добавляются в системную подсказку каждого нового AI-разговора при подключении этого хоста.',
   'hostNotesManager.save': 'Сохранить',
   'hostNotesManager.revert': 'Отменить',
   'hostNotesManager.unsaved': 'Не сохранено',
