@@ -393,6 +393,7 @@ export const zhCNCoreMessages: Messages = {
   'vault.nav.notes': '笔记',
   'vault.nav.knownHosts': '已知主机',
   'vault.nav.logs': '日志',
+  'vault.nav.aiPrompts': 'AI 提示词',
 
   'proxyProfiles.action.add': '添加代理',
   'proxyProfiles.search.placeholder': '搜索代理…',

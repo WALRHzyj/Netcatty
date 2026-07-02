@@ -1,9 +1,9 @@
 import type { ModelMessage } from 'ai';
 import { generateText, pruneMessages } from 'ai';
 import {
-  CONTEXT_COMPACTION_SYSTEM_PROMPT,
   DEFAULT_PROTECT_RECENT_MESSAGES,
   formatMessagesForCompaction,
+  getCompactionSystemPrompt,
   resolveContextWindow,
 } from '../contextCompaction';
 import type { ProviderConfig } from '../types';
@@ -94,7 +94,7 @@ export async function compactCattyMessages(
     });
     const result = await generateText({
       model: input.model,
-      instructions: CONTEXT_COMPACTION_SYSTEM_PROMPT,
+      instructions: getCompactionSystemPrompt(),
       messages: [{
         role: 'user',
         content: `Summarize this earlier conversation context for the next model turn:\n\n${formatMessagesForCompaction(pruned)}`,

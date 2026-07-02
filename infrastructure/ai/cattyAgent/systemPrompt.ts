@@ -87,7 +87,7 @@ ${permissionRules}
 ${userSkillsContext ? `\n\n## User Skills\n\n${userSkillsContext}` : ''}`;
 }
 
-function buildScopeDescription(
+export function buildScopeDescription(
   scopeType: 'terminal' | 'workspace' | 'global',
   scopeLabel?: string,
 ): string {
@@ -124,7 +124,7 @@ function formatActivePortForwards(
     .join(', ');
 }
 
-function buildHostList(
+export function buildHostList(
   hosts: SystemPromptContext['hosts'],
 ): string {
   if (hosts.length === 0) {
@@ -156,7 +156,7 @@ function buildHostList(
   return lines.join('\n');
 }
 
-function buildPermissionRules(
+export function buildPermissionRules(
   permissionMode: 'observer' | 'confirm' | 'auto' | 'review',
 ): string {
   switch (permissionMode) {

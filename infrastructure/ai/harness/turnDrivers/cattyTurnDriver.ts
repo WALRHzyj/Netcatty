@@ -5,7 +5,7 @@ import {
   estimateUnknownTokens,
   resolveContextWindow,
 } from '../../contextCompaction';
-import { buildSystemPrompt } from '../../cattyAgent/systemPrompt';
+import { buildCattySystemPrompt } from '../../cattyAgent/systemPromptRuntime';
 import { isWebSearchReady, normalizeCommandTimeoutSeconds } from '../../types';
 import { createModelFromConfig } from '../../sdk/providers';
 import { createCattyToolsFromCatalog } from '../capabilityTools';
@@ -87,7 +87,7 @@ async function runCattyTurn(input: CattyTurnInput, ctx: TurnDriverContext): Prom
   );
   const { tools } = toolsBundle;
 
-  const systemPrompt = buildSystemPrompt({
+  const systemPrompt = await buildCattySystemPrompt({
     scopeType: context.scopeType,
     scopeLabel: context.scopeLabel,
     hosts: context.terminalSessions,

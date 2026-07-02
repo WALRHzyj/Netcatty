@@ -8,12 +8,19 @@ import {
   estimateModelMessagesTokensWithKind,
   estimateUnknownTokens,
 } from "./harness/tokenEstimator";
+import { getCustomPrompt, type AIPromptId } from "./promptPresets";
+
+/** Resolve the compaction prompt to use this session — prefers the user override when present. */
+export function getCompactionSystemPrompt(): string {
+  return getCustomPrompt("catty:compaction" as AIPromptId) ?? CONTEXT_COMPACTION_SYSTEM_PROMPT;
+}
 
 const REDACTED_PAYLOAD_PREVIEW_CHARS = 80;
 
 export const DEFAULT_CONTEXT_WINDOW_TOKENS = 128_000;
 export const DEFAULT_PROTECT_RECENT_MESSAGES = 10;
 
+/** Shipment default; override from Settings → AI prompts takes precedence. */
 export const CONTEXT_COMPACTION_SYSTEM_PROMPT = `You are summarizing a long Netcatty agent conversation so it can continue without exceeding the model context window.
 
 Create a concise but complete summary that preserves:

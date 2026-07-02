@@ -38,6 +38,11 @@ import { useStoredViewMode } from "../application/state/useStoredViewMode";
 import { useStoredBoolean } from "../application/state/useStoredBoolean";
 import { useStoredNumber } from "../application/state/useStoredNumber";
 import { useStoredString } from "../application/state/useStoredString";
+import {
+  loadPromptPresets,
+  savePromptPresets,
+  type AIPromptPresets,
+} from "../infrastructure/ai/promptPresets";
 import { useTreeExpandedState } from "../application/state/useTreeExpandedState";
 import { sanitizeCredentialValue } from "../domain/credentials";
 import { resolveGroupDefaults, applyGroupDefaults } from "../domain/groupConfig";
@@ -126,12 +131,13 @@ import { useVaultGroupDragHandlers } from "./vault/useVaultGroupDragHandlers";
 
 const LazyProtocolSelectDialog = lazy(() => import("./ProtocolSelectDialog"));
 const LazyConnectionLogsManager = lazy(() => import("./ConnectionLogsManager"));
+const LazyAIPromptPresetsManager = lazy(() => import("./vault/AIPromptPresetsManager"));
 const KeychainManager = lazy(() => import("./KeychainManager"));
 const PortForwarding = lazy(() => import("./PortForwardingNew"));
 const ProxyProfilesManager = lazy(() => import("./ProxyProfilesManager"));
 const SnippetsManager = lazy(() => import("./SnippetsManager"));
 
-export type VaultSection = "hosts" | "keys" | "proxies" | "snippets" | "notes" | "port" | "knownhosts" | "logs";
+export type VaultSection = "hosts" | "keys" | "proxies" | "snippets" | "notes" | "port" | "knownhosts" | "logs" | "aiPrompts";
 
 const haveSameHostOrderResult = (previous: Host[], next: Host[]) => {
   if (previous.length !== next.length) return false;
@@ -294,6 +300,9 @@ const VaultViewInner: React.FC<VaultViewProps> = ({
   const hostsRef = useRef(hosts);
   hostsRef.current = hosts;
   const [currentSection, setCurrentSection] = useState<VaultSection>("hosts");
+  const [aiPromptPresets, setAiPromptPresets] = useState<AIPromptPresets>(
+    loadPromptPresets,
+  );
   const [search, setSearch] = useState("");
   const [selectedGroupPath, setSelectedGroupPath] = useState<string | null>(
     null,
@@ -1176,7 +1185,82 @@ const VaultViewInner: React.FC<VaultViewProps> = ({
         managedGroupPaths={managedGroupPaths}
         onConfirmDelete={deleteGroupPath}
       />
-      <VaultViewLayout ctx={{ Activity, allGroupPaths, allTags, AppLogo, Array, Badge, BookMarked, Boolean, Button, CheckSquare, ChevronDown, cancelInlineGroupEdit, clearHostSelection, ClipboardCopy, Clock, cn, commitInlineGroupRename, connectionLogs, connectSelectedHosts, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, Copy, currentSection, customGroups, deleteGroupPath, deleteGroupWithHosts, deleteSelectedHosts, deleteTargetPath, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, displayedGroups, displayedHosts, DistroAvatar, Download, Dropdown, DropdownContent, DropdownTrigger, Edit2, editingGroupPath, editingHost, editingHostGroupDefaults, FileCode, FileSymlink, FolderPlus, FolderTree, getDropTargetClasses, getEffectiveHostDistro, Globe, groupConfigs, GroupDetailsPanel, groupedDisplayHosts, handleConnectClick, handleCopyCredentials, handleDeleteTag, handleDuplicateHost, handleEditGroupConfig, handleEditHost, handleEditTag, handleExportHosts, handleHostConnect, handleImportFileSelected, handleNewHost, handleProtocolSelect, handleQuickConnect, handleQuickConnectSaveHost, handleSaveGroupConfig, handleSearchKeyDown, handleUnmanageGroup, hasHostsSidePanel, HostDetailsPanel, hostListScrollRef, hosts, HostTreeView, hotkeyScheme, identities, ImportVaultDialog, Input, isDeleteGroupOpen, isGroupPanelOpen, isHostPanelOpen, isHostsSectionActive, isImportOpen, isMultiSelectMode, isNewFolderOpen, isQuickConnectOpen, isRenameGroupOpen, isSearchQuickConnect, isSerialModalOpen, Key, keyBindings, KeychainManager, keys, knownHosts, knownHostsManagerElement, Label, lastPinnedId, LayoutGrid, LazyConnectionLogsManager, LazyProtocolSelectDialog, List, managedGroupPaths, managedSources, moveGroup, moveHostToGroup, Network, newFolderName, newHostGroupPath, noteGroups, NotebookText, notes, NotesManager, onClearUnsavedConnectionLogs, onConnectSerial, onCreateLocalTerminal, onDeleteConnectionLog, onDeleteHost, onImportOrReuseKey, onOpenHostFromNote, onOpenLogView, onOpenSettings, onRunSnippet, onToggleConnectionLogSaved, onUpdateCustomGroups, onUpdateGroupConfigs, onUpdateHosts, onUpdateIdentities, onUpdateKeys, onUpdateNoteGroups, onUpdateNotes, onUpdateProxyProfiles, onUpdateSnippetPackages, onUpdateSnippets, openNoteId: pendingOpenNoteId, onOpenNoteIdHandled: () => setPendingOpenNoteId(null), openSnippetId: pendingOpenSnippetId, onOpenSnippetIdHandled: () => setPendingOpenSnippetId(null), Pin, pinnedHosts, pinnedRecentIds, Plug, Plus, PortForwarding, protocolSelectHost, proxyProfiles, ProxyProfilesManager, quickConnectTarget, quickConnectWarnings, QuickConnectWizard, recentHosts, renameGroupError, renameGroupName, renameTargetPath, reorderGroup, reorderHost, RippleButton, rootRef, sanitizeHost, search, Search, selectedGroupPath, selectedHostIds, selectedTags, SerialConnectModal, SerialHostDetailsPanel, sessionCount, Set, setCurrentSection, setDeleteGroupWithHosts, setDeleteTargetPath, setDragOverDropTarget, setEditingGroupPath, setEditingHost, setGroupDragOverDropTarget, setIsDeleteGroupOpen, setIsGroupPanelOpen, setIsHostPanelOpen, setIsImportOpen, setIsMultiSelectMode, setIsNewFolderOpen, setIsQuickConnectOpen, setIsRenameGroupOpen, setIsSerialModalOpen, setLastPinnedId, setNewFolderName, setNewHostGroupPath, setProtocolSelectHost, setQuickConnectTarget, setQuickConnectWarnings, setRenameGroupError, setRenameGroupName, setRenameTargetPath, setSearch, setSelectedGroupPath, setSelectedHostIds, setSelectedTags, setSidebarCollapsed, setSidebarWidth, handleSidebarWidthCommit, setSortMode, setTargetParentPath, Settings, setViewMode, shellHistory, shouldHideEmptyRootHostsSection, showRecentHosts, sidebarCollapsed, sidebarWidth, snippetPackages, snippets, SnippetsManager, SortDropdown, sortMode, splitViewGridStyle, Square, Star, startInlineDeleteGroup, startInlineNewGroup, startInlineRenameGroup, submitNewFolder, submitRenameGroup, Suspense, t, TagFilterDropdown, targetParentPath, terminalFontSize, terminalSettings, TerminalSquare, terminalThemeId, toggleHostPinned, toggleHostSelection, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Trash2, treeExpandedState, treeViewGroupTree, treeViewHosts, Upload, upsertHostById, Usb, viewMode, visibleDisplayedHosts, X, Zap }} />
+      <VaultViewLayout ctx={{
+        Activity, allGroupPaths, allTags, AppLogo, Array, Badge, BookMarked,
+        Boolean, Button, CheckSquare, ChevronDown, cancelInlineGroupEdit,
+        clearHostSelection, ClipboardCopy, Clock, cn, commitInlineGroupRename,
+        connectionLogs, connectSelectedHosts, ContextMenu, ContextMenuContent,
+        ContextMenuItem, ContextMenuTrigger, Copy, currentSection, customGroups,
+        deleteGroupPath, deleteGroupWithHosts, deleteSelectedHosts,
+        deleteTargetPath, Dialog, DialogContent, DialogDescription,
+        DialogFooter, DialogHeader, DialogTitle, displayedGroups,
+        displayedHosts, DistroAvatar, Download, Dropdown, DropdownContent,
+        DropdownTrigger, Edit2, editingGroupPath, editingHost,
+        editingHostGroupDefaults, FileCode, FileSymlink, FolderPlus,
+        FolderTree, getDropTargetClasses, getEffectiveHostDistro, Globe,
+        groupConfigs, GroupDetailsPanel, groupedDisplayHosts,
+        handleConnectClick, handleCopyCredentials, handleDeleteTag,
+        handleDuplicateHost, handleEditGroupConfig, handleEditHost,
+        handleEditTag, handleExportHosts, handleHostConnect,
+        handleImportFileSelected, handleNewHost, handleProtocolSelect,
+        handleQuickConnect, handleQuickConnectSaveHost, handleSaveGroupConfig,
+        handleSearchKeyDown, handleUnmanageGroup, hasHostsSidePanel,
+        HostDetailsPanel, hostListScrollRef, hosts, HostTreeView,
+        hotkeyScheme, identities, ImportVaultDialog, Input, isDeleteGroupOpen,
+        isGroupPanelOpen, isHostPanelOpen, isHostsSectionActive, isImportOpen,
+        isMultiSelectMode, isNewFolderOpen, isQuickConnectOpen,
+        isRenameGroupOpen, isSearchQuickConnect, isSerialModalOpen, Key,
+        keyBindings, KeychainManager, keys, knownHosts,
+        knownHostsManagerElement, Label, lastPinnedId, LayoutGrid,
+        LazyConnectionLogsManager, LazyAIPromptPresetsManager,
+        LazyProtocolSelectDialog, List, managedGroupPaths, managedSources,
+        moveGroup, moveHostToGroup, Network, newFolderName, newHostGroupPath,
+        noteGroups, NotebookText, notes, NotesManager,
+        onClearUnsavedConnectionLogs, onConnectSerial, onCreateLocalTerminal,
+        onDeleteConnectionLog, onDeleteHost, onImportOrReuseKey,
+        onOpenHostFromNote, onOpenLogView, onOpenSettings, onRunSnippet,
+        onUpdateAiPromptPresets: (next: AIPromptPresets) => {
+          savePromptPresets(next);
+          setAiPromptPresets(next);
+        },
+        onToggleConnectionLogSaved, onUpdateCustomGroups, onUpdateGroupConfigs,
+        onUpdateHosts, onUpdateIdentities, onUpdateKeys, onUpdateNoteGroups,
+        onUpdateNotes, onUpdateProxyProfiles, onUpdateSnippetPackages,
+        onUpdateSnippets, openNoteId: pendingOpenNoteId,
+        onOpenNoteIdHandled: () => setPendingOpenNoteId(null),
+        openSnippetId: pendingOpenSnippetId,
+        onOpenSnippetIdHandled: () => setPendingOpenSnippetId(null), Pin,
+        pinnedHosts, pinnedRecentIds, Plug, Plus, PortForwarding,
+        protocolSelectHost, proxyProfiles, ProxyProfilesManager,
+        quickConnectTarget, quickConnectWarnings, QuickConnectWizard,
+        recentHosts, renameGroupError, renameGroupName, renameTargetPath,
+        reorderGroup, reorderHost, RippleButton, rootRef, sanitizeHost,
+        search, Search, selectedGroupPath, selectedHostIds, selectedTags,
+        SerialConnectModal, SerialHostDetailsPanel, sessionCount, Set,
+        setCurrentSection, setDeleteGroupWithHosts, setDeleteTargetPath,
+        setDragOverDropTarget, setEditingGroupPath, setEditingHost,
+        setGroupDragOverDropTarget, setIsDeleteGroupOpen, setIsGroupPanelOpen,
+        setIsHostPanelOpen, setIsImportOpen, setIsMultiSelectMode,
+        setIsNewFolderOpen, setIsQuickConnectOpen, setIsRenameGroupOpen,
+        setIsSerialModalOpen, setLastPinnedId, setNewFolderName,
+        setNewHostGroupPath, setProtocolSelectHost, setQuickConnectTarget,
+        setQuickConnectWarnings, setRenameGroupError, setRenameGroupName,
+        setRenameTargetPath, setSearch, setSelectedGroupPath,
+        setSelectedHostIds, setSelectedTags, setSidebarCollapsed,
+        setSidebarWidth, handleSidebarWidthCommit, setSortMode,
+        setTargetParentPath, Settings, setViewMode, shellHistory,
+        shouldHideEmptyRootHostsSection, showRecentHosts, sidebarCollapsed,
+        sidebarWidth, snippetPackages, snippets, SnippetsManager,
+        SortDropdown, sortMode, splitViewGridStyle, Square, Star,
+        startInlineDeleteGroup, startInlineNewGroup, startInlineRenameGroup,
+        submitNewFolder, submitRenameGroup, Suspense, t, TagFilterDropdown,
+        targetParentPath, terminalFontSize, terminalSettings, TerminalSquare,
+        terminalThemeId, toggleHostPinned, toggleHostSelection, Tooltip,
+        TooltipContent, TooltipProvider, TooltipTrigger, Trash2,
+        treeExpandedState, treeViewGroupTree, treeViewHosts, Upload,
+        upsertHostById, Usb, viewMode, visibleDisplayedHosts, X, Zap,
+        aiPromptPresets,
+      }} />
     </>
   );
 };

@@ -1,4 +1,5 @@
 import { generateText } from 'ai';
+import { getCustomPrompt, type AIPromptId } from '../promptPresets';
 
 /**
  * Risk level assigned to a shell command by the review AI.
@@ -23,7 +24,7 @@ export interface ReviewResult {
 // let it apply them.  Never enumerate specific commands here — that would
 // be both incomplete and brittle.  The AI knows more commands than we do.
 // ---------------------------------------------------------------------------
-const REVIEW_SYSTEM_PROMPT = [
+export const REVIEW_SYSTEM_PROMPT = [
   '你是运维命令安全审查助手。根据以下原则评估命令风险，只返回 JSON：',
   '',
   '## 判断原则',
@@ -67,6 +68,11 @@ const REVIEW_SYSTEM_PROMPT = [
   '返回格式（只返回 JSON，不要其他内容）：',
   '{"risk":"safe|caution|dangerous","reason":"30字以内中文理由"}',
 ].join('\n');
+
+/** Resolve the review prompt to use this session — prefers the user override when present. */
+export function getReviewSystemPrompt(): string {
+  return getCustomPrompt('catty:review' as AIPromptId) ?? REVIEW_SYSTEM_PROMPT;
+}
 
 /** Max tokens for review output. Set generously (512) because reasoning
  *  models consume output budget on internal thinking before producing the
@@ -146,7 +152,7 @@ export class CommandReviewSession {
       /* eslint-disable @typescript-eslint/no-explicit-any */
       const result = await generateText({
         model: this.model as any,
-        system: REVIEW_SYSTEM_PROMPT,
+        system: getReviewSystemPrompt(),
         messages: messages as any,
         temperature: 0,
         maxOutputTokens: REVIEW_MAX_TOKENS,

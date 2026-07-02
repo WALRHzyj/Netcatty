@@ -664,6 +664,7 @@ export const enCoreMessages: Messages = {
   'vault.nav.notes': 'Notes',
   'vault.nav.knownHosts': 'Known Hosts',
   'vault.nav.logs': 'Logs',
+  'vault.nav.aiPrompts': 'AI Prompts',
 
   'proxyProfiles.action.add': 'Add Proxy',
   'proxyProfiles.search.placeholder': 'Search proxies…',
