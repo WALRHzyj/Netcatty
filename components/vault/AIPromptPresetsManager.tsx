@@ -10,11 +10,13 @@ import {
   type AIPromptId,
   type AIPromptPresets,
 } from "../../infrastructure/ai/promptPresets";
+import type { Host } from "../../types";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { ScrollArea } from "../ui/scroll-area";
 import { Badge } from "../ui/badge";
 import { toast } from "../ui/toast";
+import VaultHostNotesManager from "./VaultHostNotesManager";
 
 /** Shipped defaults, used to display diffs and restore-from-default actions. */
 const SHIPPED_DEFAULTS: Record<AIPromptId, () => string> = {
@@ -28,6 +30,8 @@ const SYSTEM_PROMPT_IDS: AIPromptId[] = ["catty:system", "catty:compaction", "ca
 interface AIPromptPresetsManagerProps {
   aiPromptPresets: AIPromptPresets;
   onUpdateAiPromptPresets: (next: AIPromptPresets) => void;
+  hosts?: Host[];
+  onUpdateHosts?: (updater: Host[] | ((prev: Host[]) => Host[])) => void;
 }
 
 const PromptCard = memo<{
@@ -198,6 +202,8 @@ CollapsibleSection.displayName = "CollapsibleSection";
 const AIPromptPresetsManager: React.FC<AIPromptPresetsManagerProps> = ({
   aiPromptPresets,
   onUpdateAiPromptPresets,
+  hosts = [],
+  onUpdateHosts,
 }) => {
   const { t } = useI18n();
   const [editingId, setEditingId] = useState<AIPromptId | null>(null);
@@ -355,8 +361,11 @@ const AIPromptPresetsManager: React.FC<AIPromptPresetsManagerProps> = ({
             title={t("aiPromptPresets.section.user.title")}
             desc={t("aiPromptPresets.section.user.desc")}
           >
-            <div className="rounded-lg border border-dashed border-border/50 bg-secondary/10 px-4 py-6 text-center text-xs text-muted-foreground">
-              {t("aiPromptPresets.section.user.placeholder")}
+            <div className="h-[420px] rounded-md border border-border/40 overflow-hidden">
+              <VaultHostNotesManager
+                hosts={hosts}
+                onUpdateHosts={onUpdateHosts ?? (() => {})}
+              />
             </div>
           </CollapsibleSection>
         </div>

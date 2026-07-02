@@ -201,7 +201,7 @@ interface VaultViewProps {
   onDeleteHost: (id: string) => void;
   onConnect: (host: Host) => void;
   onOpenHostFromNote?: (host: Host, source?: { noteId: string }) => void;
-  onUpdateHosts: (hosts: Host[]) => void;
+  onUpdateHosts: (hosts: Host[] | ((prev: Host[]) => Host[])) => void;
   onUpdateKeys: (keys: SSHKey[]) => void;
   onImportOrReuseKey: (draft: Partial<SSHKey>) => SSHKey;
   onUpdateIdentities: (identities: Identity[]) => void;
@@ -262,7 +262,7 @@ const VaultViewInner: React.FC<VaultViewProps> = ({
   onDeleteHost,
   onConnect,
   onOpenHostFromNote,
-  onUpdateHosts,
+  onUpdateHosts: _onUpdateHosts,
   onUpdateKeys,
   onImportOrReuseKey,
   onUpdateIdentities,
@@ -295,6 +295,15 @@ const VaultViewInner: React.FC<VaultViewProps> = ({
   onVaultFocusRequestHandled,
   terminalSettings,
 }) => {
+  // Accept both (Host[]) and ((Host[]) => Host[]) call signatures so child
+  // components (e.g. VaultHostNotesManager) can pass updater functions.
+  const onUpdateHosts = useCallback(
+    (updater: Host[] | ((prev: Host[]) => Host[])) => {
+      _onUpdateHosts(typeof updater === "function" ? updater(hostsRef.current) : updater);
+    },
+    [_onUpdateHosts],
+  );
+
   const { t } = useI18n();
   const rootRef = useRef<HTMLDivElement>(null);
   const hostsRef = useRef(hosts);

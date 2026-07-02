@@ -781,6 +781,8 @@ export function VaultViewLayout({ ctx }: { ctx: VaultViewLayoutContext }) {
               <LazyAIPromptPresetsManager
                 aiPromptPresets={aiPromptPresets}
                 onUpdateAiPromptPresets={onUpdateAiPromptPresets}
+                hosts={hosts}
+                onUpdateHosts={onUpdateHosts}
               />
             </Suspense>
           </LazyLoadBoundary>

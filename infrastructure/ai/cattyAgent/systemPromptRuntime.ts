@@ -142,18 +142,3 @@ export async function buildCattySystemPrompt(context: SystemPromptContext): Prom
   return buildSystemPrompt(context);
 }
 
-/**
- * Synchronous variant that skips the user-edit lookup. Used by legacy callers
- * that keep using the original `buildSystemPrompt`.
- */
-export function buildCattySystemPromptSync(context: SystemPromptContext): string {
-  const custom = getCustomPrompt(PROMPT_ID);
-  if (custom && custom.trim().length > 0) {
-    return resolveCattySystemPrompt(custom, context);
-  }
-  // Eager import — used by callers that are themselves synchronous and bundle
-  // both modules in the same ESM graph.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { buildSystemPrompt } = require('./systemPrompt') as typeof import('./systemPrompt');
-  return buildSystemPrompt(context);
-}

@@ -23,6 +23,8 @@ export interface HostNotesEditorProps {
   className?: string;
   showHeader?: boolean;
   defaultTab?: "edit" | "preview";
+  /** Minimum inner height for the editor / preview area. Defaults to 120 px. */
+  minHeight?: number;
 }
 
 export const HostNotesEditor: React.FC<HostNotesEditorProps> = ({
@@ -32,6 +34,7 @@ export const HostNotesEditor: React.FC<HostNotesEditorProps> = ({
   className,
   showHeader = true,
   defaultTab,
+  minHeight = 120,
 }) => {
   const { t } = useI18n();
   const [tab, setTab] = useState<"edit" | "preview">(() => defaultNotesTab(value, defaultTab));
@@ -46,9 +49,9 @@ export const HostNotesEditor: React.FC<HostNotesEditorProps> = ({
   const trimmed = value.trim();
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("space-y-2 h-full flex flex-col", className)}>
       {showHeader && (
-        <>
+        <div className="shrink-0">
           <div className="flex items-center gap-2">
             <FileText size={14} className="text-muted-foreground shrink-0" />
             <p className="text-xs font-semibold">
@@ -56,10 +59,10 @@ export const HostNotesEditor: React.FC<HostNotesEditorProps> = ({
             </p>
           </div>
           <p className="text-xs text-muted-foreground">{t("hostDetails.notes.help")}</p>
-        </>
+        </div>
       )}
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "edit" | "preview")}>
-        <TabsList className="h-8 w-full">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "edit" | "preview")} className="flex-1 flex flex-col min-h-0">
+        <TabsList className="h-8 w-full shrink-0">
           <TabsTrigger value="edit" className="flex-1 text-xs">
             {t("hostDetails.notes.tab.edit")}
           </TabsTrigger>
@@ -67,17 +70,17 @@ export const HostNotesEditor: React.FC<HostNotesEditorProps> = ({
             {t("hostDetails.notes.tab.preview")}
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="edit" className="mt-2">
+        <TabsContent value="edit" className="flex-1 mt-2 min-h-0">
           <Textarea
             placeholder={t("hostDetails.notes.placeholder")}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="min-h-[120px] text-sm"
-            rows={5}
+            className="h-full w-full text-sm resize-none"
+            style={{ minHeight: `${minHeight}px` }}
           />
         </TabsContent>
-        <TabsContent value="preview" className="mt-2">
-          <ScrollArea className="h-[120px] rounded-md border border-border/60 bg-muted/20 p-3">
+        <TabsContent value="preview" className="flex-1 mt-2 min-h-0">
+          <ScrollArea className="h-full w-full rounded-md border border-border/60 bg-muted/20 p-3" style={{ minHeight: `${minHeight}px` }}>
             {trimmed ? (
               <LazyMessageResponse className={PREVIEW_PROSE_CLASS}>{trimmed}</LazyMessageResponse>
             ) : (
