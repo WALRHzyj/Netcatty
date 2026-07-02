@@ -28,6 +28,7 @@ import {
   buildScopeDescription,
 } from './systemPrompt';
 import { getCustomPrompt, type AIPromptId } from '../promptPresets';
+import type { Host } from '../../../types';
 
 const PROMPT_ID = 'catty:system' as AIPromptId;
 
@@ -121,6 +122,31 @@ export function resolveCattySystemPrompt(
     out = out.replaceAll(marker, value);
   }
   return out;
+}
+
+/**
+ * Build a small "Active Host Notes" block that appends each host's notes to
+ * the system prompt. When a user has written a note (markdown) for a host it
+ * ends up here, under a stable header, so the agent treats it as extra context
+ * about the session it is operating on.
+ *
+ * `hostsWithNotes` is a pre-filtered array: only hosts whose `notes.trim()` is
+ * non-empty should be passed in. `hostId` lets callers include a quick id
+ * fragment for debugging if needed (kept out of the visible block).
+ */
+export function buildHostNotesBlock(hostsWithNotes: Array<Pick<Host, 'label' | 'hostname' | 'protocol' | 'notes'>>): string {
+  const sections: string[] = [];
+  for (const { label, hostname, protocol, notes } of hostsWithNotes) {
+    const text = notes.trim();
+    if (!text) continue;
+    const niceLabel = label && label !== hostname ? `${label} (${hostname})` : hostname;
+    const protoParen = protocol && protocol !== 'ssh' ? ` (${protocol})` : '';
+    sections.push(`### ${niceLabel}${protoParen}\n\n${text}`);
+  }
+  if (sections.length === 0) return '';
+  // Keep trailing newline so it cleanly separates from what follows.
+  const body = sections.join('\n\n');
+  return `\n\n## Active Host Notes\n\nThe following notes are attached to the hosts in the current scope.\n\nTreat them as additional, host-specific instructions that apply to this conversation.\n\n${body}\n`;
 }
 
 /**

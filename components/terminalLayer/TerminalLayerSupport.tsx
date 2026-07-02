@@ -358,6 +358,7 @@ export const buildAITerminalSessionInfo = (
     // PTY and cannot connect to vendor CLIs, so network device mode doesn't apply.
     deviceType: (session?.moshEnabled || host?.moshEnabled || session?.etEnabled || host?.etEnabled) ? undefined : host?.deviceType,
     connected: session?.status === 'connected',
+    notes: host?.notes,
     ...(hostChain?.length ? { hostChain } : {}),
     ...(activePortForwards?.length ? { activePortForwards } : {}),
   };

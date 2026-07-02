@@ -5,7 +5,7 @@ import {
   estimateUnknownTokens,
   resolveContextWindow,
 } from '../../contextCompaction';
-import { buildCattySystemPrompt } from '../../cattyAgent/systemPromptRuntime';
+import { buildCattySystemPrompt, buildHostNotesBlock } from '../../cattyAgent/systemPromptRuntime';
 import { isWebSearchReady, normalizeCommandTimeoutSeconds } from '../../types';
 import { createModelFromConfig } from '../../sdk/providers';
 import { createCattyToolsFromCatalog } from '../capabilityTools';
@@ -87,7 +87,10 @@ async function runCattyTurn(input: CattyTurnInput, ctx: TurnDriverContext): Prom
   );
   const { tools } = toolsBundle;
 
-  const systemPrompt = await buildCattySystemPrompt({
+  // Re-resolve the effective system prompt on EVERY turn so that edits to the
+  // user-customised template (Vault → AI prompts) and to host notes take effect
+  // immediately on the next user message — no session-scoped memoisation.
+  const baseSystemPrompt = await buildCattySystemPrompt({
     scopeType: context.scopeType,
     scopeLabel: context.scopeLabel,
     hosts: context.terminalSessions,
@@ -95,6 +98,22 @@ async function runCattyTurn(input: CattyTurnInput, ctx: TurnDriverContext): Prom
     webSearchEnabled: isWebSearchReady(context.webSearchConfig),
     userSkillsContext,
   });
+
+  // Inject host notes under a stable header. Notes come from the originating
+  // host records via `buildAITerminalSessionInfo` (see
+  // components/terminalLayer/TerminalLayerSupport.tsx).
+  const hostNotesArg = context.terminalSessions
+    .filter((s) => !!s.notes?.trim())
+    .map((s) => ({
+      label: s.label,
+      hostname: s.hostname,
+      protocol: s.protocol,
+      notes: s.notes!.trim(),
+    }));
+  const notesBlock = buildHostNotesBlock(hostNotesArg);
+  const systemPrompt = notesBlock
+    ? `${baseSystemPrompt}${notesBlock}`
+    : baseSystemPrompt;
 
   if (!context.activeProvider) {
     ui.reportStreamError(sessionId, signal, 'No AI provider configured. Please configure a provider in Settings → AI.');

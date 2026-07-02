@@ -28,6 +28,7 @@ export interface TerminalSessionInfo {
   shellType?: string;
   deviceType?: string;
   connected: boolean;
+  notes?: string;
   hostChain?: Array<{ hostId: string; label?: string; hostname?: string }>;
   activePortForwards?: Array<{
     ruleId: string;
